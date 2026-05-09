@@ -2,6 +2,39 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../hooks/useAuth';
 import { api, storage } from '../../lib/api';
+import dynamic from 'next/dynamic';
+
+// Import TrackingMap dynamically to avoid SSR issues with Leaflet
+const TrackingMap = dynamic(() => import('../../components/tracking/TrackingMap'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[400px] w-full bg-gray-200 animate-pulse rounded-2xl flex items-center justify-center">
+      <p className="text-gray-500">Loading map...</p>
+    </div>
+  ),
+});
+
+interface Order {
+  id: string;
+  userId: string;
+  status: string;
+  totalAmount: number;
+  createdAt: string;
+  deliveryLatitude: number;
+  deliveryLongitude: number;
+  restaurantId: string;
+}
+
+interface OrderDetails extends Order {
+  restaurant: {
+    latitude: number;
+    longitude: number;
+  };
+  tracking?: {
+    currentLatitude: number;
+    currentLongitude: number;
+  };
+}
 
 interface Order {
   id: string;
@@ -17,7 +50,7 @@ export default function OrderTrackingPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { id } = router.query;
 
-  const [order, setOrder] = useState<Order | null>(null);
+  const [order, setOrder] = useState<OrderDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -140,16 +173,31 @@ export default function OrderTrackingPage() {
               </div>
             </div>
 
-            {/* Tracking Placeholder */}
-            <div className="bg-blue-50 border border-blue-100 p-6 rounded-2xl text-center">
-              <div className="text-blue-600 mb-2">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.045l-4.242 4.242a1 1 0 01-1.414 0l-4.242-4.242A1 1 0 015.414 16H18.586a1 1 0 010 2z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
+            {/* Live Tracking Map */}
+            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <span className="w-2 h-2 bg-green-500 rounded-full animate-ping"></span>
+                Live Tracking
+              </h3>
+              <div className="h-[400px] w-full">
+                {order && (
+                  <TrackingMap
+                    restaurantCoords={{
+                      lat: order.restaurant?.latitude || 3.848,
+                      lng: order.restaurant?.longitude || 11.502,
+                    }}
+                    userCoords={{
+                      lat: order.deliveryLatitude || 3.848,
+                      lng: order.deliveryLongitude || 11.502,
+                    }}
+                    driverCoords={
+                      order.tracking
+                        ? { lat: order.tracking.currentLatitude, lng: order.tracking.currentLongitude }
+                        : null
+                    }
+                  />
+                )}
               </div>
-              <h3 className="font-semibold text-blue-900">Real-time tracking coming soon</h3>
-              <p className="text-sm text-blue-700 mt-1">We'll update you as your order moves!</p>
             </div>
           </div>
         )}
