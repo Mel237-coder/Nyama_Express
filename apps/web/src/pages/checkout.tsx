@@ -1,12 +1,20 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../hooks/useAuth';
 import { useCart } from '../hooks/useCart';
+import AddressSelector from '../components/checkout/AddressSelector';
+
+interface CheckoutAddress {
+  coords: { lat: number; lng: number } | null;
+  text: string;
+  saveAddress: boolean;
+}
 
 export default function CheckoutPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { items } = useCart();
+  const [checkoutAddress, setCheckoutAddress] = useState<CheckoutAddress | null>(null);
 
   useEffect(() => {
     // Prevent redirect while auth is still loading
@@ -50,9 +58,9 @@ export default function CheckoutPage() {
           {/* Section 1: Delivery Address */}
           <section className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Delivery Address</h2>
-            <div className="py-8 text-center text-gray-500 italic border-2 border-dashed border-gray-200 rounded-xl">
-              AddressSelector Placeholder
-            </div>
+            <AddressSelector
+              onAddressConfirm={(address) => setCheckoutAddress(address)}
+            />
           </section>
 
           {/* Section 2: Order Summary */}
@@ -73,9 +81,21 @@ export default function CheckoutPage() {
 
           {/* Section 4: Final Action */}
           <section className="pt-4">
-            <div className="py-8 text-center text-gray-500 italic border-2 border-dashed border-gray-200 rounded-xl">
-              Place Order Button Placeholder
-            </div>
+            <button
+              disabled={!checkoutAddress}
+              className={`w-full py-4 px-6 rounded-xl font-bold text-lg transition-all shadow-lg active:scale-95 ${
+                checkoutAddress
+                ? 'bg-orange-500 text-white hover:bg-orange-600'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              Place Order
+            </button>
+            {!checkoutAddress && (
+              <p className="text-center text-sm text-gray-500 mt-3">
+                Please confirm your delivery address to continue
+              </p>
+            )}
           </section>
         </div>
       </div>
