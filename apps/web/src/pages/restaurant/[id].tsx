@@ -2,6 +2,8 @@ import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 import { api } from '../../lib/api';
 import { useCart } from '../../hooks/useCart';
+import RestaurantHero from '../../components/restaurant/RestaurantHero';
+import RestaurantInfo from '../../components/restaurant/RestaurantInfo';
 
 interface Restaurant {
   id: string;
@@ -61,8 +63,9 @@ export default function RestaurantPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-       {/* Components will be inserted here */}
-       <h1 className="p-4 text-2xl font-bold">{restaurant.name}</h1>
+      <RestaurantHero restaurant={restaurant} />
+      <RestaurantInfo restaurant={restaurant} />
+      {/* Menu components will be added here in Task 3 */}
     </div>
   );
 }
