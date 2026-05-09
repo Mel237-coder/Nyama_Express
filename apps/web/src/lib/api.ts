@@ -147,6 +147,10 @@ class ApiClient {
     return this.fetch(`/api/admin/orders?page=${page}&limit=${limit}`, { token });
   }
 
+  async getAnalytics(token: string) {
+    return this.fetch('/api/admin/analytics', { token });
+  }
+
 
   // ============================================
   // PAYMENTS
