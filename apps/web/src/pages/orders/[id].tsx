@@ -4,6 +4,8 @@ import { useAuth } from '../../hooks/useAuth';
 import { api, storage } from '../../lib/api';
 import { socket } from '../../lib/websocket';
 import dynamic from 'next/dynamic';
+import StatusHeader from '../../components/tracking/StatusHeader';
+import DriverCard from '../../components/tracking/DriverCard';
 
 // Import TrackingMap dynamically to avoid SSR issues with Leaflet
 const TrackingMap = dynamic(() => import('../../components/tracking/TrackingMap'), {
@@ -31,9 +33,15 @@ interface OrderDetails extends Order {
     latitude: number;
     longitude: number;
   };
+  driver?: {
+    name: string;
+    phone: string;
+    photo?: string;
+  };
   tracking?: {
     currentLatitude: number;
     currentLongitude: number;
+    eta?: string;
   };
 }
 
@@ -158,6 +166,10 @@ export default function OrderTrackingPage() {
     );
   }
 
+  const currentStatus = status || order?.status;
+  const currentEta = order?.tracking?.eta || null;
+  const currentDriver = order?.driver;
+
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header */}
@@ -178,6 +190,11 @@ export default function OrderTrackingPage() {
       <main className="max-w-md mx-auto px-4 py-6">
         {order && (
           <div className="space-y-6">
+            <StatusHeader
+              status={currentStatus || 'UNKNOWN'}
+              eta={currentEta}
+            />
+
             {/* Order Summary Card */}
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
               <div className="flex justify-between items-start mb-4">
@@ -187,11 +204,11 @@ export default function OrderTrackingPage() {
                 </div>
                 <div className="text-right">
                   <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                    (status || order.status) === 'DELIVERED' ? 'bg-green-100 text-green-700' :
-                    (status || order.status) === 'CANCELED' ? 'bg-red-100 text-red-700' :
+                    currentStatus === 'DELIVERED' ? 'bg-green-100 text-green-700' :
+                    currentStatus === 'CANCELED' ? 'bg-red-100 text-red-700' :
                     'bg-blue-100 text-blue-700'
                   }`}>
-                    {(status || order.status)}
+                    {currentStatus}
                   </span>
                 </div>
               </div>
@@ -206,30 +223,32 @@ export default function OrderTrackingPage() {
             {/* Live Tracking Map */}
             <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
               <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-ping"></span>
+                <span className="w-2 h-2 bg-green-500 rounded-full animate-s-ping"></span>
                 Live Tracking
               </h3>
               <div className="h-[400px] w-full">
-                {order && (
-                  <TrackingMap
-                    restaurantCoords={{
-                      lat: order.restaurant?.latitude || 3.848,
-                      lng: order.restaurant?.longitude || 11.502,
-                    }}
-                    userCoords={{
-                      lat: order.deliveryLatitude || 3.848,
-                      lng: order.deliveryLongitude || 11.502,
-                    }}
-                    driverCoords={
-                      driverCoords || (order.tracking
-                        ? { lat: order.tracking.currentLatitude, lng: order.tracking.currentLongitude }
-                        : null)
-                    }
-                  />
-                )}
+                <TrackingMap
+                  restaurantCoords={{
+                    lat: order.restaurant?.latitude || 3.848,
+                    lng: order.restaurant?.longitude || 11.502,
+                  }}
+                  userCoords={{
+                    lat: order.deliveryLatitude || 3.848,
+                    lng: order.deliveryLongitude || 11.502,
+                  }}
+                  driverCoords={
+                    driverCoords || (order.tracking
+                      ? { lat: order.tracking.currentLatitude, lng: order.tracking.currentLongitude }
+                      : null)
+                  }
+                />
               </div>
             </div>
           </div>
+        )}
+
+        {currentStatus === 'OUT_FOR_DELIVERY' && (
+          <DriverCard driver={currentDriver} />
         )}
       </main>
     </div>
