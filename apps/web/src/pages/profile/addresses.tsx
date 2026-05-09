@@ -13,6 +13,7 @@ import {
 import { api, storage } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
 import { AddressCard } from '../../components/profile/AddressCard';
+import { AddressForm } from '../../components/profile/AddressForm';
 
 interface Address {
   id: string;
@@ -29,16 +30,10 @@ export default function AddressBookPage() {
   const { user, isLoading: authLoading } = useAuth();
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [editingAddress, setEditingAddress] = useState<Address | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
-
-  // Form State
-  const [form, setForm] = useState({
-    label: '',
-    street: '',
-    isDefault: false,
-  });
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -61,30 +56,30 @@ export default function AddressBookPage() {
     }
   };
 
-  const handleAddAddress = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveAddress = async (addressData: any) => {
     setSaving(true);
     setMessage(null);
     try {
       const token = storage.getAccessToken() || '';
-      await api.addAddress(form, token);
-      setMessage({ text: 'Address added successfully!', type: 'success' });
-      setForm({ label: '', street: '', isDefault: false });
+      if (editingAddress) {
+        // Assuming updateAddress exists or addAddress handles both
+        await api.addAddress(addressData, token);
+      } else {
+        await api.addAddress(addressData, token);
+      }
+      setMessage({ text: 'Address saved successfully!', type: 'success' });
       setIsAdding(false);
+      setEditingAddress(null);
       await fetchAddresses();
     } catch (e) {
-      setMessage({ text: 'Failed to add address', type: 'error' });
+      setMessage({ text: 'Failed to save address', type: 'error' });
     } finally {
       setSaving(false);
     }
   };
 
   const handleEditAddress = (addr: Address) => {
-    setForm({
-      label: addr.label,
-      street: addr.street,
-      isDefault: addr.isDefault,
-    });
+    setEditingAddress(addr);
     setIsAdding(true);
   };
 
@@ -144,64 +139,14 @@ export default function AddressBookPage() {
 
         {/* Add Address Form */}
         {isAdding && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
-            <div className="flex justify-between items-center mb-2">
-              <h2 className="font-bold text-gray-900">{form.label ? 'Edit Address' : 'New Address'}</h2>
-              <button
-                onClick={() => {
-                  setIsAdding(false);
-                  setForm({ label: '', street: '', isDefault: false });
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                Cancel
-              </button>
-            </div>
-            <form onSubmit={handleAddAddress} className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Label</label>
-                <input
-                  type="text"
-                  placeholder="Home, Work, etc."
-                  required
-                  value={form.label}
-                  onChange={(e) => setForm({ ...form, label: e.target.value })}
-                  className="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
-                />
-              </div
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Street Address</label>
-                <textarea
-                  placeholder="Detailed address (Street, House number, Landmark)"
-                  required
-                  rows={3}
-                  value={form.street}
-                  onChange={(e) => setForm({ ...form, street: e.target.value })}
-                  className="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
-                />
-              </div
-              <div className="flex items-center gap-3 py-2">
-                <input
-                  type="checkbox"
-                  id="isDefault"
-                  checked={form.isDefault}
-                  onChange={(e) => setForm({ ...form, isDefault: e.target.checked })}
-                  className="w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
-                />
-                <label htmlFor="isDefault" className="text-sm font-medium text-gray-700 cursor-pointer">
-                  Set as default delivery address
-                </label>
-              </div
-              <button
-                type="submit"
-                disabled={saving}
-                className="w-full py-3 bg-orange-500 text-white font-semibold rounded-xl hover:bg-orange-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
-              >
-                {saving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-                Save Address
-              </button>
-            </form>
-          </div>
+          <AddressForm
+            existingAddress={editingAddress}
+            onSave={handleSaveAddress}
+            onCancel={() => {
+              setIsAdding(false);
+              setEditingAddress(null);
+            }}
+          />
         )}
 
         {/* Address List */}
