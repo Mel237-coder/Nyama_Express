@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
 import { MapPin, Loader2, Save, Check, AlertCircle } from 'lucide-react';
+import { AddressData } from '../../pages/profile/addresses';
 
 interface AddressFormProps {
-  onSave: (address: any) => void;
+  onSave: (address: AddressData) => void;
   onCancel: () => void;
-  existingAddress?: any;
+  existingAddress?: any; // Keep as any for now or Use Address from addresses.tsx if imported
 }
 
 export function AddressForm({ onSave, onCancel, existingAddress }: AddressFormProps) {
   const [saving, setSaving] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<AddressData>({
     label: existingAddress?.label || '',
     street: existingAddress?.street || '',
     latitude: existingAddress?.latitude || undefined,

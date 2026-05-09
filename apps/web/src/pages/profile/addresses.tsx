@@ -25,6 +25,15 @@ interface Address {
   isDefault: boolean;
 }
 
+export interface AddressData {
+  label: string;
+  street: string;
+  latitude?: number;
+  longitude?: number;
+  landmarks?: string;
+  isDefault: boolean;
+}
+
 export default function AddressBookPage() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
@@ -56,14 +65,13 @@ export default function AddressBookPage() {
     }
   };
 
-  const handleSaveAddress = async (addressData: any) => {
+  const handleSaveAddress = async (addressData: AddressData) => {
     setSaving(true);
     setMessage(null);
     try {
       const token = storage.getAccessToken() || '';
       if (editingAddress) {
-        // Assuming updateAddress exists or addAddress handles both
-        await api.addAddress(addressData, token);
+        await api.updateAddress(editingAddress.id, addressData, token);
       } else {
         await api.addAddress(addressData, token);
       }
