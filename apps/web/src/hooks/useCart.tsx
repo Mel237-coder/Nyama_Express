@@ -21,6 +21,7 @@ interface CartContextType {
   addItem: (item: CartItem, restId: string, restName: string) => void;
   removeItem: (menuItemId: string) => void;
   updateQuantity: (menuItemId: string, quantity: number) => void;
+  updateItemOption: (menuItemId: string, options: string[]) => void;
   clearCart: () => void;
   subtotal: number;
   deliveryFee: number;
@@ -104,6 +105,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  const updateItemOption = (menuItemId: string, options: string[]) => {
+    setItems((prev) =>
+      prev.map((i) => (i.menuItemId === menuItemId ? { ...i, options } : i))
+    );
+  };
+
   const clearCart = () => {
     setItems([]);
     setRestaurantId(null);
@@ -124,6 +131,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         addItem,
         removeItem,
         updateQuantity,
+        updateItemOption,
         clearCart,
         subtotal,
         deliveryFee,

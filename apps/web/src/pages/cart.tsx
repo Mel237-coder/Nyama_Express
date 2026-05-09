@@ -6,24 +6,15 @@ import { formatPrice, t } from '../lib/i18n';
 import { ItemCustomizerModal, MenuItem, CustomizerDetails } from '../components/restaurant/ItemCustomizerModal';
 
 export default function CartPage() {
-  const { items, subtotal, deliveryFee, total, updateQuantity, removeItem, restaurantName } = useCart();
+  const { items, subtotal, deliveryFee, total, updateQuantity, updateItemOption, removeItem, restaurantName } = useCart();
   const { lang } = useLanguage();
   const [customizingItem, setCustomizingItem] = useState<MenuItem | null>(null);
 
   const handleAddToCart = (details: CustomizerDetails) => {
-    // The plan asks to update existing item rather than duplicate.
-    // In our current useCart, addItem handles this if the item exists,
-    // but for a review page, we might want a specific 'update' or just use a custom logic here.
-    // However, ItemCustomizerModal's onAddToCart passes a CustomizerDetails object.
-    // Let's implement a logic that updates the item in the cart.
-
-    // Since we are in the cart, we already have the item.
-    // The current useCart implementation of addItem doesn't handle 'options' updates well (it just increments quantity).
-    // For the purpose of this task, let's assume we can use updateQuantity or a similar approach,
-    // but since the modal changes options, we might need to modify useCart later or handle it via a separate update function.
-    // Given the current useCart, let's just use updateQuantity for now and trust the modal's quantity.
-
     updateQuantity(details.item.id, details.quantity);
+    if (details.options) {
+      updateItemOption(details.item.id, details.options);
+    }
     setCustomizingItem(null);
   };
 
@@ -124,7 +115,11 @@ export default function CartPage() {
 
             <Link
               href="/checkout"
-              className="block w-full py-4 bg-orange-500 text-white rounded-xl font-bold text-lg text-center shadow-lg hover:bg-orange-600 transition-colors active:scale-95"
+              className={`block w-full py-4 bg-orange-500 text-white rounded-xl font-bold text-lg text-center shadow-lg transition-colors active:scale-95 ${
+                items.length === 0
+                  ? 'pointer-events-none opacity-50'
+                  : 'hover:bg-orange-600'
+              }`}
             >
               {t('checkout', lang)}
             </Link>
