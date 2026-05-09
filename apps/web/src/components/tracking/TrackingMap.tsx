@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -43,6 +43,63 @@ function MapRecenter({ coords }: { coords: Coords }) {
   return null;
 }
 
+function SmoothDriverMarker({ coords }: { coords: Coords | null }) {
+  const markerRef = useRef<L.Marker | null>(null);
+  const currentCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
+  const animationRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!coords) return;
+
+    if (!currentCoordsRef.current) {
+      currentCoordsRef.current = { ...coords };
+    }
+
+    if (markerRef.current) {
+      const start = { ...currentCoordsRef.current };
+      const end = { ...coords };
+      const duration = 1500; // 1.5 seconds interpolation
+      const startTime = performance.now();
+
+      const animate = (currentTime: number) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        const lat = start.lat + (end.lat - start.lat) * progress;
+        const lng = start.lng + (end.lng - start.lng) * progress;
+
+        if (markerRef.current) {
+          markerRef.current.setLatLng([lat, lng]);
+        }
+
+        currentCoordsRef.current = { lat, lng };
+
+        if (progress < 1) {
+          animationRef.current = requestAnimationFrame(animate);
+        }
+      };
+
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      animationRef.current = requestAnimationFrame(animate);
+    }
+  }, [coords]);
+
+  return (
+    <Marker
+      ref={(el) => {
+        markerRef.current = el;
+        if (el && !currentCoordsRef.current) {
+          currentCoordsRef.current = { ...coords! };
+        }
+      }}
+      position={[coords?.lat || 0, coords?.lng || 0]}
+      icon={driverIcon}
+    >
+      <Popup>Your Driver</Popup>
+    </Marker>
+  );
+}
+
 export default function TrackingMap({ restaurantCoords, userCoords, driverCoords }: TrackingMapProps) {
   // Center the map on the destination (user) by default
   const center = userCoords || { lat: 3.848, lng: 11.502 }; // Default Yaoundé
@@ -73,9 +130,7 @@ export default function TrackingMap({ restaurantCoords, userCoords, driverCoords
         {/* Driver Marker */}
         {driverCoords && (
           <>
-            <Marker position={[driverCoords.lat, driverCoords.lng]} icon={driverIcon}>
-              <Popup>Your Driver</Popup>
-            </Marker>
+            <SmoothDriverMarker coords={driverCoords} />
             <MapRecenter coords={driverCoords} />
           </>
         )}
