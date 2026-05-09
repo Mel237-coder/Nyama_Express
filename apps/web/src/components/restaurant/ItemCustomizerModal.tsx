@@ -12,7 +12,7 @@ export interface MenuItem {
 export interface CustomizerDetails {
   item: MenuItem;
   quantity: number;
-  option: string;
+  options: string[];
 }
 
 export function ItemCustomizerModal({
@@ -94,7 +94,7 @@ export function ItemCustomizerModal({
 
         <button
           disabled={!selectedOption}
-          onClick={() => onAddToCart({ item, quantity, option: selectedOption })}
+          onClick={() => onAddToCart({ item, quantity, options: [selectedOption] })}
           className="w-full py-4 bg-orange-500 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-orange-600 transition-colors disabled:bg-gray-300 disabled:shadow-none disabled:cursor-not-allowed"
         >
           Add to Cart — {formatPrice(total)} FCFA
