@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { MapPin, Loader2, Save, Check, AlertCircle } from 'lucide-react';
-import { AddressData } from '../../pages/profile/addresses';
+import { AddressData, Address } from '../../pages/profile/addresses';
 
 interface AddressFormProps {
   onSave: (address: AddressData) => void;
   onCancel: () => void;
-  existingAddress?: any; // Keep as any for now or Use Address from addresses.tsx if imported
+  existingAddress?: Address;
 }
 
 export function AddressForm({ onSave, onCancel, existingAddress }: AddressFormProps) {
