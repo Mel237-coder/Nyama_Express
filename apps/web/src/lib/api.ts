@@ -214,13 +214,38 @@ class ApiClient {
     });
   }
 
-  async deleteAddress(id: string, token: string) {
-    return this.fetch(`/api/users/addresses/${id}`, {
-      method: 'DELETE',
+  async updateItemAvailability(itemId: string, available: boolean, token: string) {
+    return this.fetch(`/api/menu-items/${itemId}/availability`, {
+      method: 'PATCH',
+      body: JSON.stringify({ available }),
       token,
     });
   }
-}
+
+  async updateMenuItem(itemId: string, data: {
+    name?: string;
+    description?: string;
+    price?: number;
+    imageUrl?: string;
+  }, token: string) {
+    return this.fetch(`/api/menu-items/${itemId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+      token,
+    });
+  }
+
+  async uploadImage(formData: FormData, token: string) {
+    return this.fetch('/api/uploads/image', {
+      method: 'POST',
+      body: formData,
+      token,
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  }
+
 
 export const api = new ApiClient();
 
