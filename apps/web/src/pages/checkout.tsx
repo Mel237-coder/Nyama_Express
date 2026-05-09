@@ -7,6 +7,15 @@ import OrderSummary from '../components/checkout/OrderSummary';
 import PaymentSelector from '../components/checkout/PaymentSelector';
 import { api, storage } from '../lib/api';
 
+interface SavedAddress {
+  id: string;
+  label: string;
+  street: string;
+  latitude: number;
+  longitude: number;
+  isDefault: boolean;
+}
+
 interface CheckoutAddress {
   coords: { lat: number; lng: number } | null;
   text: string;
@@ -17,7 +26,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { items, subtotal, deliveryFee, total, clearCart } = useCart();
-  const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [checkoutAddress, setCheckoutAddress] = useState<CheckoutAddress | null>(null);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [paymentPhone, setPaymentPhone] = useState('');
@@ -55,7 +64,7 @@ export default function CheckoutPage() {
       if (timersRef.current.intervalId) clearInterval(timersRef.current.intervalId);
       if (timersRef.current.timeoutId) clearTimeout(timersRef.current.timeoutId);
     };
-  }, [isAuthenticated, authLoading, items, router]);
+  }, [isAuthenticated, authLoading, router]);
 
   if (authLoading) {
     return (
@@ -166,6 +175,14 @@ export default function CheckoutPage() {
     timersRef.current.timeoutId = pollTimeout;
   };
 
+  const handleSavedAddressSelect = (address: SavedAddress) => {
+    setCheckoutAddress({
+      coords: { lat: address.latitude, lng: address.longitude },
+      text: address.street,
+      saveAddress: false,
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       <div className="max-w-2xl mx-auto px-4 pt-8">
@@ -187,13 +204,7 @@ export default function CheckoutPage() {
                   {savedAddresses.map((addr) => (
                     <button
                       key={addr.id}
-                      onClick={() => {
-                        setCheckoutAddress({
-                          coords: { lat: addr.latitude, lng: addr.longitude },
-                          text: addr.street,
-                          saveAddress: false,
-                        });
-                      }}
+                      onClick={() => handleSavedAddressSelect(addr)}
                       className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                         checkoutAddress?.text === addr.street
                           ? 'bg-orange-500 text-white shadow-md'
