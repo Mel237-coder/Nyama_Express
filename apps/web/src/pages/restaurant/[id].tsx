@@ -6,6 +6,7 @@ import RestaurantHero from '../../components/restaurant/RestaurantHero';
 import RestaurantInfo from '../../components/restaurant/RestaurantInfo';
 import MenuCategoryNav from '../../components/restaurant/MenuCategoryNav';
 import MenuItem from '../../components/restaurant/MenuItem';
+import ItemCustomizerModal from '../../components/restaurant/ItemCustomizerModal';
 
 interface Restaurant {
   id: string;
@@ -37,13 +38,14 @@ interface MenuItemData {
 export default function RestaurantPage() {
   const router = useRouter();
   const { id } = router.query;
-  const { restaurantId: cartRestaurantId, clearCart } = useCart();
+  const { restaurantId: cartRestaurantId, clearCart, addItem: addItemToCart } = useCart();
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItemData[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<MenuItemData | null>(null);
 
   useEffect(() => {
     if (typeof id !== 'string') return;
@@ -84,8 +86,20 @@ export default function RestaurantPage() {
   }, [id]);
 
   const handleAddItem = (item: MenuItemData) => {
-    console.log('Add item to cart trigger (Task 4):', item);
-    alert(`Adding ${item.name} to cart...`);
+    setSelectedItem(item);
+  };
+
+  const handleAddToCart = (details: any) => {
+    const { item, quantity, option } = details;
+    addItemToCart({
+      id: item.id,
+      name: item.name,
+      price: item.price + (option ? 100 : 0),
+      quantity,
+      restaurantId: restaurant?.id,
+      options: { size: option }
+    });
+    setSelectedItem(null);
   };
 
   const filteredItems = selectedCategoryId === 'all'
@@ -126,6 +140,14 @@ export default function RestaurantPage() {
           )}
         </div>
       </div>
+
+      {selectedItem && (
+        <ItemCustomizerModal
+          item={selectedItem}
+          onClose={() => setSelectedItem(null)}
+          onAddToCart={handleAddToCart}
+        />
+      )}
     </div>
   );
 }
