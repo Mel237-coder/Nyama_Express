@@ -17,6 +17,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { items, subtotal, deliveryFee, total, clearCart } = useCart();
+  const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
   const [checkoutAddress, setCheckoutAddress] = useState<CheckoutAddress | null>(null);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [paymentPhone, setPaymentPhone] = useState('');
@@ -40,6 +41,14 @@ export default function CheckoutPage() {
       // Ideally we would use a toast notification here
       alert('Your cart is empty');
       router.push('/cart');
+    }
+
+    // 3. Fetch Saved Addresses
+    const token = storage.getAccessToken();
+    if (token) {
+      api.getAddresses(token)
+        .then(addresses => setSavedAddresses(addresses))
+        .catch(err => console.error('Error fetching saved addresses:', err));
     }
 
     return () => {
@@ -168,6 +177,36 @@ export default function CheckoutPage() {
           {/* Section 1: Delivery Address */}
           <section className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Delivery Address</h2>
+
+            {savedAddresses.length > 0 && (
+              <div className="mb-6">
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
+                  Quick Pick
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {savedAddresses.map((addr) => (
+                    <button
+                      key={addr.id}
+                      onClick={() => {
+                        setCheckoutAddress({
+                          coords: { lat: addr.latitude, lng: addr.longitude },
+                          text: addr.street,
+                          saveAddress: false,
+                        });
+                      }}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                        checkoutAddress?.text === addr.street
+                          ? 'bg-orange-500 text-white shadow-md'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {addr.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <AddressSelector
               onAddressConfirm={(address) => setCheckoutAddress(address)}
             />
