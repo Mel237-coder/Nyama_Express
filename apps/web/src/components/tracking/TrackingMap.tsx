@@ -84,6 +84,14 @@ function SmoothDriverMarker({ coords }: { coords: Coords | null }) {
     }
   }, [coords]);
 
+  useEffect(() => {
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, []);
+
   return (
     <Marker
       ref={(el) => {
