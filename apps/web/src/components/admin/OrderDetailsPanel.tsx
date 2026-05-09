@@ -7,8 +7,8 @@ interface OrderDetailsPanelProps {
 
 export default function OrderDetailsPanel({ order, onClose }: OrderDetailsPanelProps) {
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black bg-opacity-50">
-      <div className="w-full max-w-md bg-white h-full shadow-xl flex flex-col animate-in slide-in-from-right">
+    <div className="fixed inset-0 z-50 flex justify-end bg-black bg-opacity-50 md:justify-end justify-center">
+      <div className="w-full max-w-md bg-white h-full md:h-full shadow-xl flex flex-col animate-in slide-in-from-right md:slide-in-from-right slide-in-from-bottom">
         <div className="p-4 border-b flex justify-between items-center">
           <h2 className="text-xl font-bold">Order Details</h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">✕</button>

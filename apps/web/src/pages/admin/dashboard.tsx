@@ -115,9 +115,11 @@ const AdminDashboard = () => {
                     <stat.icon className={stat.color} size={24} />
                   </div>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-500 font-medium">{stat.label}</p>
-                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500 font-medium">{stat.label}</p>
+                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                  </div>
                 </div>
               </div>
             ))}
