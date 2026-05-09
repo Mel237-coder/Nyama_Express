@@ -178,7 +178,16 @@ class ApiClient {
     });
   }
 
+  async updatePaymentPhone(phone: string, token: string) {
+    return this.fetch('/api/users/payment-phone', {
+      method: 'PUT',
+      body: JSON.stringify({ phone }),
+      token,
+    });
+  }
+
   async getAddresses(token: string) {
+
     return this.fetch('/api/users/addresses', { token });
   }
 
@@ -193,6 +202,13 @@ class ApiClient {
     return this.fetch('/api/users/addresses', {
       method: 'POST',
       body: JSON.stringify(data),
+      token,
+    });
+  }
+
+  async deleteAddress(id: string, token: string) {
+    return this.fetch(`/api/users/addresses/${id}`, {
+      method: 'DELETE',
       token,
     });
   }
