@@ -1,17 +1,38 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { formatPrice } from '../../lib/i18n';
+
+interface MenuItem {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  image: string | null;
+}
+
+interface CustomizerDetails {
+  item: MenuItem;
+  quantity: number;
+  option: string;
+}
 
 export function ItemCustomizerModal({
   item,
   onClose,
   onAddToCart
 }: {
-  item: any,
+  item: MenuItem,
   onClose: () => void,
-  onAddToCart: (details: any) => void
+  onAddToCart: (details: CustomizerDetails) => void
 }) {
   const [quantity, setQuantity] = useState(1);
   const [selectedOption, setSelectedOption] = useState('');
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
 
   // Simple pricing logic as per plan: base price + 100 if option selected
   const total = (item.price + (selectedOption ? 100 : 0)) * quantity;
