@@ -37,15 +37,6 @@ interface OrderDetails extends Order {
   };
 }
 
-interface Order {
-  id: string;
-  userId: string;
-  status: string;
-  totalAmount: number;
-  createdAt: string;
-  // Add other necessary order fields here
-}
-
 export default function OrderTrackingPage() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
