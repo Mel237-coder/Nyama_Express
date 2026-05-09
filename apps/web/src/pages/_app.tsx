@@ -7,8 +7,7 @@ import { LanguageProvider } from '../hooks/useLanguage';
 import { AuthProvider } from '../hooks/useAuth';
 import { CartProvider } from '../hooks/useCart';
 
-// Service worker registration for PWA
-import { registerSW } from 'next-pwa';
+import { FloatingCartBar } from '../components/layout/FloatingCartBar';
 
 export default function App({ Component, pageProps }: AppProps) {
   const [isOnline, setIsOnline] = useState(true);
@@ -53,6 +52,7 @@ export default function App({ Component, pageProps }: AppProps) {
           )}
 
           <Component {...pageProps} />
+          <FloatingCartBar />
 
           {/* Bottom navigation bar */}
           <BottomNav />
