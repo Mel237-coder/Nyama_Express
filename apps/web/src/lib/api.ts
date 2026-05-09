@@ -135,6 +135,11 @@ class ApiClient {
     return this.fetch(`/api/orders/${orderId}`, { token });
   }
 
+  async getDeliveryTracking(orderId: string, token: string) {
+    return this.fetch(`/api/orders/${orderId}/tracking`, { token });
+  }
+
+
   // ============================================
   // PAYMENTS
   // ============================================

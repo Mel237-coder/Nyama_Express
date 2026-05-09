@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../hooks/useAuth';
 import { api, storage } from '../../lib/api';
+import { socket } from '../../lib/websocket';
 import dynamic from 'next/dynamic';
 
 // Import TrackingMap dynamically to avoid SSR issues with Leaflet
@@ -53,51 +54,89 @@ export default function OrderTrackingPage() {
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [driverCoords, setDriverCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchOrder() {
-      if (!id) return;
+    const fetchInitialData = async () => {
+      if (!id || !user) return;
 
-      // Wait for auth to resolve
-      if (authLoading) return;
-
-      // Auth Guard: Redirect if not authenticated
-      if (!user) {
-        router.replace('/');
-        return;
-      }
-
+      setIsLoading(true);
       try {
         const token = storage.getAccessToken();
         if (!token) {
-          router.replace('/');
+          setError('Session expired. Please login again.');
           return;
         }
 
         const orderData = await api.getOrder(id as string, token);
-
-        // Security Check: Compare order owner with current user
-        if (orderData.userId !== user.id) {
-          console.error('Unauthorized access to order');
-          router.replace('/');
-          return;
-        }
-
-        setOrder(orderData);
-      } catch (err: any) {
-        console.error('Error fetching order:', err);
-        if (err.message.includes('404')) {
-          setError('Order not found');
+        if (orderData) {
+          setOrder(orderData);
+          setStatus(orderData.status);
+          if (orderData.tracking) {
+            setDriverCoords({
+              lat: orderData.tracking.currentLatitude,
+              lng: orderData.tracking.currentLongitude,
+            });
+          }
         } else {
-          setError('An error occurred while fetching the order');
+          setError('Order not found.');
         }
+      } catch (err: any) {
+        console.error('Failed to fetch order:', err);
+        setError(err.message || 'An error occurred while fetching order details.');
       } finally {
         setIsLoading(false);
       }
-    }
+    };
 
-    fetchOrder();
-  }, [id, user, authLoading, router]);
+    fetchInitialData();
+  }, [id, user]);
+
+  useEffect(() => {
+    if (!id || !user || isLoading || !order) return;
+
+    socket.connect();
+    socket.emit('order:subscribe', { orderId: id });
+
+    socket.on('delivery:location_update', (data: { lat: number; lng: number }) => {
+      setDriverCoords({ lat: data.lat, lng: data.lng });
+    });
+
+    socket.on('order:status_changed', (data: { status: string }) => {
+      setStatus(data.status);
+    });
+
+    const pollingInterval = setInterval(async () => {
+      if (!socket.connected) {
+        try {
+          const token = storage.getAccessToken();
+          if (token) {
+            const trackingData = await api.getDeliveryTracking(id as string, token);
+            if (trackingData) {
+              setStatus(trackingData.status);
+              if (trackingData.currentLatitude && trackingData.currentLongitude) {
+                setDriverCoords({
+                  lat: trackingData.currentLatitude,
+                  lng: trackingData.currentLongitude,
+                });
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Polling error:', err);
+        }
+      }
+    }, 30000);
+
+    return () => {
+      socket.off('delivery:location_update');
+      socket.off('order:status_changed');
+      socket.emit('order:unsubscribe', { orderId: id });
+      socket.disconnect();
+      clearInterval(pollingInterval);
+    };
+  }, [id, user, isLoading, order]);
 
   if (authLoading || isLoading) {
     return (
@@ -157,11 +196,11 @@ export default function OrderTrackingPage() {
                 </div>
                 <div className="text-right">
                   <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                    order.status === 'DELIVERED' ? 'bg-green-100 text-green-700' :
-                    order.status === 'CANCELED' ? 'bg-red-100 text-red-700' :
+                    (status || order.status) === 'DELIVERED' ? 'bg-green-100 text-green-700' :
+                    (status || order.status) === 'CANCELED' ? 'bg-red-100 text-red-700' :
                     'bg-blue-100 text-blue-700'
                   }`}>
-                    {order.status}
+                    {(status || order.status)}
                   </span>
                 </div>
               </div>
@@ -191,9 +230,9 @@ export default function OrderTrackingPage() {
                       lng: order.deliveryLongitude || 11.502,
                     }}
                     driverCoords={
-                      order.tracking
+                      driverCoords || (order.tracking
                         ? { lat: order.tracking.currentLatitude, lng: order.tracking.currentLongitude }
-                        : null
+                        : null)
                     }
                   />
                 )}
