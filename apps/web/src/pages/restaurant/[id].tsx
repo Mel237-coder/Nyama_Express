@@ -6,7 +6,7 @@ import RestaurantHero from '../../components/restaurant/RestaurantHero';
 import RestaurantInfo from '../../components/restaurant/RestaurantInfo';
 import MenuCategoryNav from '../../components/restaurant/MenuCategoryNav';
 import MenuItem from '../../components/restaurant/MenuItem';
-import ItemCustomizerModal from '../../components/restaurant/ItemCustomizerModal';
+import ItemCustomizerModal, { CustomizerDetails } from '../../components/restaurant/ItemCustomizerModal';
 
 interface Restaurant {
   id: string;
@@ -89,7 +89,7 @@ export default function RestaurantPage() {
     setSelectedItem(item);
   };
 
-  const handleAddToCart = (details: any) => {
+  const handleAddToCart = (details: CustomizerDetails) => {
     const { item, quantity, option } = details;
     addItemToCart({
       id: item.id,

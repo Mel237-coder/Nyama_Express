@@ -9,7 +9,7 @@ interface MenuItem {
   image: string | null;
 }
 
-interface CustomizerDetails {
+export interface CustomizerDetails {
   item: MenuItem;
   quantity: number;
   option: string;
