@@ -135,8 +135,16 @@ class ApiClient {
     return this.fetch(`/api/orders/${orderId}`, { token });
   }
 
-  async getDeliveryTracking(orderId: string, token: string) {
-    return this.fetch(`/api/orders/${orderId}/tracking`, { token });
+  async updateOrderStatus(orderId: string, status: string, token: string) {
+    return this.fetch(`/api/orders/${orderId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+      token,
+    });
+  }
+
+  async getAdminOrders(token: string, page = 1, limit = 20) {
+    return this.fetch(`/api/admin/orders?page=${page}&limit=${limit}`, { token });
   }
 
 
