@@ -1,0 +1,699 @@
+// ============================================
+// FoodApp Cameroun - Schéma Prisma
+// Application de livraison de repas
+// ============================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum UserRole {
+  CLIENT
+  RESTAURANT_OWNER
+  DELIVERY_PERSON
+  ADMIN
+}
+
+enum UserStatus {
+  PENDING      // En attente de vérification OTP
+  ACTIVE       // Vérifié et actif
+  SUSPENDED    // Suspendu par l'admin
+  DELETED      // Supprimé (soft delete)
+}
+
+enum PaymentMethod {
+  MTN_MOMO
+  ORANGE_MONEY
+  CASH          // Paiement à la livraison
+  NOTCHPAY      // Agrégateur (fallback)
+}
+
+enum PaymentStatus {
+  PENDING       // En attente de paiement
+  INITIATED     // Initiation envoyée
+  SUCCESS       // Paiement réussi
+  FAILED        // Échec du paiement
+  REFUNDED      // Remboursé
+  CANCELLED     // Annulé
+}
+
+enum OrderStatus {
+  PENDING        // Commande passée, en attente restaurant
+  CONFIRMED      // Restaurant a accepté
+  PREPARING      // En préparation
+  READY          // Prête pour récupération
+  IN_TRANSIT     // Livreur en route
+  DELIVERED      // Livrée au client
+  CANCELLED      // Annulée
+}
+
+enum DeliveryStatus {
+  AVAILABLE     // Livreur disponible
+  ASSIGNED      // Mission assignée
+  ACCEPTED      // Livreur a accepté
+  REJECTED      // Livreur a refusé
+  PICKED_UP     // Commande récupérée
+  IN_TRANSIT    // En livraison
+  DELIVERED     // Livrée
+  FAILED        // Échec de livraison
+}
+
+enum DocumentType {
+  CNI           // Carte Nationale d'Identité
+  PASSPORT
+  RCCM          // Registre du Commerce
+  PATENT        // Patente
+}
+
+enum DocumentStatus {
+  PENDING       // En attente de validation
+  APPROVED      // Approuvé
+  REJECTED      // Rejeté
+}
+
+enum WithdrawalStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum NotificationType {
+  SMS
+  IN_APP
+  EMAIL
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum VehicleType {
+  MOTORCYCLE    // Moto (recommandé)
+  BICYCLE       // Vélo
+  CAR           // Voiture
+  FOOT          // À pied
+}
+
+// ============================================
+// UTILISATEURS
+// ============================================
+
+model User {
+  id            String      @id @default(uuid())
+  phone         String      @unique  // Format: +2376xxxxxxxx ou +2372xxxxxxxx
+  phonePrefix   String      @default("+237")  // Préfixe camerounais
+  passwordHash  String?     // Null si inscription par OTP uniquement
+  role          UserRole
+  status        UserStatus  @default(PENDING)
+
+  // Informations personnelles
+  firstName     String?
+  lastName      String?
+  email         String?     @unique  // Optionnel pour beaucoup d'utilisateurs
+  avatar        String?     // URL Cloudinary
+  language      String      @default("fr")  // "fr" ou "en"
+
+  // Documents KYC
+  CNI           String?     // Numéro CNI
+  documents     Document[]
+
+  // Relations
+  addresses     Address[]
+  orders        Order[]     @relation("ClientOrders")
+  restaurant    Restaurant? // Si owner de restaurant
+  deliveries    Order[]     @relation("DeliveryOrders")
+  reviews       Review[]
+  notifications Notification[]
+  withdrawals   Withdrawal[]
+
+  // Champs de sécurité
+  otpAttempts   Int         @default(0)
+  lastOtpAt     DateTime?
+  lastLoginAt   DateTime?
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  deletedAt     DateTime?   // Soft delete
+
+  @@index([phone])
+  @@index([role])
+  @@index([status])
+}
+
+// ============================================
+// ADRESSES CLIENT
+// ============================================
+
+model Address {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  label     String   // ex: "Maison", "Bureau", "Université"
+  street    String   // Adresse complète
+  latitude  Float?
+  longitude Float?
+  zoneId    String?
+  zone      Zone?    @relation(fields: [zoneId], references: [id])
+
+  isDefault Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// ============================================
+// ZONES DE LIVRAISON
+// ============================================
+
+model Zone {
+  id          String    @id @default(uuid())
+  city        String    // Yaoundé, Douala, Bafoussam, etc.
+  name        String    // Bastos, Bonamoussadi, Akwa, Bonapriso, etc.
+  deliveryFee Int       @default(500)  // Frais en FCFA
+  isActive    Boolean   @default(true)
+
+  addresses   Address[]
+  restaurants Restaurant[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([city, name])
+  @@index([city])
+}
+
+// ============================================
+// DOCUMENTS KYC
+// ============================================
+
+model Document {
+  id        String        @id @default(uuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type      DocumentType
+  number    String        // Numéro du document
+  fileUrl   String        // URL vers le fichier (Cloudinary)
+  status    DocumentStatus @default(PENDING)
+
+  // Pour les restaurants
+  restaurantId String?
+  restaurant   Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  reviewedBy String?
+  reviewedAt DateTime?
+  rejectionReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([restaurantId])
+}
+
+// ============================================
+// RESTAURANTS
+// ============================================
+
+model Restaurant {
+  id          String    @id @default(uuid())
+
+  // Propriétaire (User avec role RESTAURANT_OWNER)
+  ownerId     String    @unique
+  owner       User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  // Informations du restaurant
+  name        String
+  description String?   @db.Text
+  descriptionEn String?
+  phone       String
+  email       String?
+
+  // Localisation
+  address     String
+  latitude    Float?
+  longitude    Float?
+  zoneId      String?
+  zone        Zone?     @relation(fields: [zoneId], references: [id])
+
+  // Images
+  logo        String?   // URL Cloudinary
+  coverImage  String?   // URL Cloudinary
+
+  // Documents légaux
+  RCCM        String?   @unique  // Registre du Commerce
+  isActive    Boolean   @default(false)  // Activé par admin
+
+  // Horaires d'ouverture (JSON)
+  openingHours Json     @default("{}")  // {"monday": {"open": "10:00", "close": "22:00"}, ...}
+  deliveryRadius Float  @default(5)  // Rayon de livraison en km
+
+  // Cuisines proposées (tags)
+  cuisineTypes String[] @default([])  // ["africaine", "fast-food", "grillades"]
+
+  // Statistiques (calculées)
+  totalOrders   Int      @default(0)
+  avgRating     Float    @default(0)
+  avgDeliveryTime Int?   // Temps moyen de livraison en minutes
+
+  // Relations
+  categories    Category[]
+  orders        Order[]
+  reviews       Review[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([ownerId])
+  @@index([zoneId])
+  @@index([isActive])
+}
+
+// ============================================
+// CATÉGORIES DE MENU
+// ============================================
+
+model Category {
+  id          String    @id @default(uuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  name        String    // Nom en français
+  nameEn      String?   // Nom en anglais
+  description String?
+  sortOrder   Int       @default(0)
+  isActive    Boolean   @default(true)
+
+  items       MenuItem[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([restaurantId])
+}
+
+// ============================================
+// ITEMS DU MENU
+// ============================================
+
+model MenuItem {
+  id          String    @id @default(uuid())
+  categoryId  String
+  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  name        String
+  nameEn      String?
+  description String?   @db.Text
+  descriptionEn String?
+
+  price       Int       // Prix en FCFA (pas de décimales)
+  image       String?   // URL Cloudinary
+
+  isAvailable Boolean   @default(true)
+  isFeatured  Boolean   @default(false)
+  preparationTime Int?  // Temps de préparation en minutes
+
+  orderItems  OrderItem[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([categoryId])
+  @@index([isAvailable])
+}
+
+// ============================================
+// COMMANDES
+// ============================================
+
+model Order {
+  id            String      @id @default(uuid())
+
+  // Utilisateurs
+  clientId      String
+  client        User        @relation("ClientOrders", fields: [clientId], references: [id], onDelete: Cascade)
+  restaurantId  String
+  restaurant    Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  deliveryPersonId String?
+  deliveryPerson User?       @relation("DeliveryOrders", fields: [deliveryPersonId], references: [id], onDelete: SetNull)
+
+  // Statuts
+  status        OrderStatus @default(PENDING)
+  paymentStatus PaymentStatus @default(PENDING)
+  paymentMethod PaymentMethod
+
+  // Montants (tous en FCFA)
+  subtotal      Int         // Sous-total (sans livraison)
+  deliveryFee   Int         // Frais de livraison
+  commission    Int         // Commission plateforme
+  discount      Int         @default(0)  // Réduction appliquée
+  total         Int         // Total final (subtotal + deliveryFee - discount)
+
+  // Adresse de livraison
+  deliveryAddress String
+  deliveryLatitude Float?
+  deliveryLongitude Float?
+  deliveryNotes  String?
+
+  // Code de retrait (pour récupérer la commande)
+  pickupCode    String      @unique @default(uuid())  // 6 caractères
+
+  // Annulation
+  cancelledBy   String?    // Qui a annulé (client/restaurant/admin)
+  cancelReason  String?
+
+  // Relations
+  items         OrderItem[]
+  payment       Payment?
+  tracking      DeliveryTracking?
+  review        Review?
+
+  // Mise à jour statut
+  statusHistory Json[]      @default([])  // [{"status": "PENDING", "timestamp": "..."}, ...]
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Timestamps de statut
+  confirmedAt   DateTime?
+  preparingAt   DateTime?
+  readyAt       DateTime?
+  pickedUpAt    DateTime?
+  deliveredAt   DateTime?
+  cancelledAt   DateTime?
+
+  @@index([clientId])
+  @@index([restaurantId])
+  @@index([deliveryPersonId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================
+// ITEMS DE COMMANDE
+// ============================================
+
+model OrderItem {
+  id          String    @id @default(uuid())
+  orderId     String
+  order       Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId  String
+  menuItem    MenuItem  @relation(fields: [menuItemId], references: [id])
+
+  quantity    Int
+  unitPrice   Int       // Prix unitaire au moment de la commande
+  subtotal    Int       // quantity * unitPrice
+
+  // Options sélectionnées (ex: "sans oignon", "extra sauce")
+  options     String[]  @default([])
+
+  createdAt   DateTime  @default(now())
+
+  @@index([orderId])
+  @@index([menuItemId])
+}
+
+// ============================================
+// PAIEMENTS
+// ============================================
+
+model Payment {
+  id            String        @id @default(uuid())
+  orderId       String        @unique
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  // Provider de paiement
+  provider      String        // "mtn_momo", "orange_money", "notchpay", "cash"
+
+  // Montant et devise
+  amount        Int           // Montant en FCFA
+  currency      String        @default("XAF")
+
+  // Statuts et références
+  status        PaymentStatus @default(PENDING)
+  providerTransactionId String?  // ID de transaction chez le provider
+  providerReference      String? // Référence externe
+
+  // Détails provider (webhook data)
+  internalPaymentId String?   // ID utilisé internally pour le provider
+  checkoutUrl       String?   // URL de paiement (USSD, etc.)
+  expiresAt         DateTime? // Expiration du paiement
+
+  // Timestamps
+  initiatedAt    DateTime?
+  processedAt    DateTime?
+  failedAt       DateTime?
+  refundedAt     DateTime?
+
+  // Détails échec/remboursement
+  failureReason  String?
+  refundReason   String?
+
+  // Webhook complet
+  rawWebhook     Json?
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([providerTransactionId])
+  @@index([status])
+}
+
+// ============================================
+// SUIVI DE LIVRAISON (temps réel)
+// ============================================
+
+model DeliveryTracking {
+  id              String   @id @default(uuid())
+  orderId         String   @unique
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  deliveryPersonId String
+  status           DeliveryStatus @default(ASSIGNED)
+
+  // Géolocalisation (mise à jour temps réel)
+  currentLatitude  Float?
+  currentLongitude Float?
+
+  // timestamps
+  assignedAt       DateTime @default(now())
+  acceptedAt       DateTime?
+  pickedUpAt      DateTime?
+  deliveredAt     DateTime?
+
+  // Historique des positions
+  locationHistory Json[] @default([])  // [{"lat": x, "lng": y, "timestamp": "..."}]
+
+  updatedAt       DateTime @updatedAt
+
+  @@index([deliveryPersonId])
+  @@index([status])
+}
+
+// ============================================
+// AVIS ET NOTATIONS
+// ============================================
+
+model Review {
+  id           String   @id @default(uuid())
+
+  orderId      String   @unique
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  clientId     String
+  client       User     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  // Note du restaurant (1-5)
+  restaurantRating Int
+  // Note du livreur (1-5)
+  deliveryRating  Int?
+
+  // Commentaires
+  comment       String?  @db.Text
+  commentEn     String?
+
+  // Réponse du restaurant
+  restaurantResponse String?
+  restaurantResponseAt DateTime?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([restaurantId])
+  @@index([clientId])
+}
+
+// ============================================
+// CODES PROMO / RÉDUCTIONS
+// ============================================
+
+model Promotion {
+  id              String   @id @default(uuid())
+
+  code            String   @unique
+  description     String?
+  descriptionEn   String?
+
+  discountType    String   // "percentage" ou "fixed"
+  discountValue   Int      // Pourcentage (1-100) ou montant fixe en FCFA
+
+  // Conditions
+  minOrderAmount  Int      @default(0)    // Commande minimum en FCFA
+  maxDiscount     Int?                    // Plafond de réduction pourcentage
+
+  // Limites d'utilisation
+  maxUses         Int?
+  usedCount       Int      @default(0)
+
+  // Validité
+  startsAt        DateTime @default(now())
+  expiresAt       DateTime
+
+  // Applicable à (optionnel)
+  restaurantId    String?  // Si null, valide pour tous
+  firstOrderOnly  Boolean  @default(false)  // Uniquement première commande
+
+  isActive        Boolean  @default(true)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([code])
+  @@index([expiresAt])
+}
+
+// ============================================
+// RETRAITS (LIVREURS / RESTAURANTS)
+// ============================================
+
+model Withdrawal {
+  id           String           @id @default(uuid())
+  userId       String
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  amount       Int              // Montant en FCFA
+  provider     String           // "mtn_momo" ou "orange_money"
+  providerAccount String        // Numéro de téléphone du beneficiaire
+
+  status       WithdrawalStatus @default(PENDING)
+
+  // Traitement
+  processedBy  String?
+  processedAt  DateTime?
+
+  // Erreur
+  failureReason String?
+
+  // Historique
+  notes        String?
+
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+// ============================================
+// NOTIFICATIONS
+// ============================================
+
+model Notification {
+  id        String             @id @default(uuid())
+  userId    String
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type      NotificationType
+  channel   NotificationType[] // SMS, IN_APP, EMAIL (peut être multiple)
+
+  // Contenu
+  title     String
+  titleEn   String?
+  message   String   @db.Text
+  messageEn String?
+
+  // Statut par canal
+  smsStatus NotificationStatus @default(PENDING)
+  emailStatus NotificationStatus?
+
+  // Métadonnées (pour les liens, etc.)
+  metadata  Json?
+
+  sentAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// ============================================
+// SESSIONS (pour JWT refresh tokens)
+// ============================================
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  refreshToken String   @unique
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  revokedAt    DateTime?
+
+  @@index([userId])
+  @@index([refreshToken])
+}
+
+// ============================================
+// TRANSACTION LOGS (Conformité ANIF/COBAC)
+// ============================================
+
+model TransactionLog {
+  id            String   @id @default(uuid())
+  type          String   // "payment", "refund", "withdrawal", "deposit"
+
+  // Parties impliquées
+  userId        String
+  orderId       String?
+  paymentId     String?
+  withdrawalId  String?
+
+  // Montant
+  amount        Int      // En FCFA
+  currency      String   @default("XAF")
+
+  // Détails
+  provider      String?  // MTN, Orange, NotchPay, etc.
+  providerRef   String?
+
+  // Statut
+  status        String   // success, failed, pending
+
+  // Métadonnées complètes pour audit
+  metadata      Json?
+
+  // Seuils déclaration (ANIF)
+  aboveThreshold Boolean @default(false)  // > 5,000,000 FCFA
+
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([orderId])
+  @@index([createdAt])
+  @@index([aboveThreshold])
+}

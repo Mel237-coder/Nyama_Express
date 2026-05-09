@@ -1,0 +1,105 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgis/postgis:15-3.3
+    container_name: foodapp_postgres
+    environment:
+      POSTGRES_USER: ${DB_USER:-foodapp}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-foodapp_secret}
+      POSTGRES_DB: ${DB_NAME:-foodapp}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-foodapp} -d ${DB_NAME:-foodapp}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for caching and sockets
+  redis:
+    image: redis:7-alpine
+    container_name: foodapp_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API (NestJS)
+  api:
+    build:
+      context: ./packages/api
+      dockerfile: Dockerfile
+    container_name: foodapp_api
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: ${API_PORT:-3001}
+      DATABASE_URL: postgresql://${DB_USER:-foodapp}:${DB_PASSWORD:-foodapp_secret}@postgres:5432/${DB_NAME:-foodapp}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET:-super_secret_jwt_key_change_in_production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      # Africa's Talking
+      AFRICASTALKING_API_KEY: ${AFRICASTALKING_API_KEY:-}
+      AFRICASTALKING_USERNAME: ${AFRICASTALKING_USERNAME:-sandbox}
+      # MTN MoMo
+      MTN_SUBSCRIPTION_KEY: ${MTN_SUBSCRIPTION_KEY:-}
+      MTN_TARGET_ENVIRONMENT: ${MTN_TARGET_ENVIRONMENT:-sandbox}
+      MTN_API_USER: ${MTN_API_USER:-}
+      MTN_API_KEY: ${MTN_API_KEY:-}
+      MTN_CALLBACK_URL: ${MTN_CALLBACK_URL:-http://localhost:3001/api/payments/momo/callback}
+      # Orange Money
+      ORANGE_MONEY_API_KEY: ${ORANGE_MONEY_API_KEY:-}
+      ORANGE_MONEY_WALLET: ${ORANGE_MONEY_WALLET:-}
+      ORANGE_MONEY_CALLBACK_URL: ${ORANGE_MONEY_CALLBACK_URL:-http://localhost:3001/api/payments/orange/callback}
+      # NotchPay
+      NOTCHPAY_PUBLIC_KEY: ${NOTCHPAY_PUBLIC_KEY:-}
+      NOTCHPAY_CALLBACK_URL: ${NOTCHPAY_CALLBACK_URL:-http://localhost:3001/api/payments/notchpay/callback}
+      # Cloudinary
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./packages/api:/app
+      - /app/node_modules
+    command: npm run start:dev
+
+  # Frontend Web (Next.js PWA)
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    container_name: foodapp_web
+    environment:
+      NEXT_PUBLIC_API_URL: ${API_URL:-http://localhost:3001}
+      NEXT_PUBLIC_SOCKET_URL: ${SOCKET_URL:-http://localhost:3001}
+      NEXT_PUBLIC_MAP_TILES_URL: ${MAP_TILES_URL:-https://tile.openstreetmap.org}
+    ports:
+      - "3002:3002"
+    depends_on:
+      - api
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+      - /app/.next
+    command: npm run dev
+
+volumes:
+  postgres_data:
+  redis_data:

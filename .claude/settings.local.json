@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell.exe *)",
+      "Bash(npm run *)",
+      "Bash(npm install *)",
+      "Bash(cmd /c \"npm install --legacy-peer-deps\")",
+      "Bash(where.exe npm *)",
+      "Bash(git add *)",
+      "Bash(git commit -m 'feat\\(web\\): implement restaurant detail page shell and cart guard *)",
+      "Bash(git init *)",
+      "Bash(git commit *)"
+    ]
+  }
+}
