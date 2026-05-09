@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { formatPrice } from '../../lib/i18n';
 
-interface MenuItem {
+export interface MenuItem {
   id: string;
   name: string;
   description: string | null;
