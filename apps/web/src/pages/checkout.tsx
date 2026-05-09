@@ -3,6 +3,8 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../hooks/useAuth';
 import { useCart } from '../hooks/useCart';
 import AddressSelector from '../components/checkout/AddressSelector';
+import OrderSummary from '../components/checkout/OrderSummary';
+import PaymentSelector from '../components/checkout/PaymentSelector';
 
 interface CheckoutAddress {
   coords: { lat: number; lng: number } | null;
@@ -13,8 +15,10 @@ interface CheckoutAddress {
 export default function CheckoutPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { items } = useCart();
+  const { items, subtotal, deliveryFee, total } = useCart();
   const [checkoutAddress, setCheckoutAddress] = useState<CheckoutAddress | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [paymentPhone, setPaymentPhone] = useState('');
 
   useEffect(() => {
     // Prevent redirect while auth is still loading
@@ -66,25 +70,31 @@ export default function CheckoutPage() {
           {/* Section 2: Order Summary */}
           <section className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Order Summary</h2>
-            <div className="py-8 text-center text-gray-500 italic border-2 border-dashed border-gray-200 rounded-xl">
-              OrderSummary Placeholder
-            </div>
+            <OrderSummary
+              items={items}
+              subtotal={subtotal}
+              deliveryFee={deliveryFee}
+              total={total}
+            />
           </section>
 
           {/* Section 3: Payment Method */}
           <section className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Payment Method</h2>
-            <div className="py-8 text-center text-gray-500 italic border-2 border-dashed border-gray-200 rounded-xl">
-              PaymentSelector Placeholder
-            </div>
+            <PaymentSelector
+              selectedMethod={paymentMethod}
+              onMethodChange={setPaymentMethod}
+              paymentPhone={paymentPhone}
+              onPhoneChange={setPaymentPhone}
+            />
           </section>
 
           {/* Section 4: Final Action */}
           <section className="pt-4">
             <button
-              disabled={!checkoutAddress}
+              disabled={!checkoutAddress || !paymentMethod || ( (paymentMethod === 'momo' || paymentMethod === 'orange') && !paymentPhone)}
               className={`w-full py-4 px-6 rounded-xl font-bold text-lg transition-all shadow-lg active:scale-95 ${
-                checkoutAddress
+                checkoutAddress && paymentMethod && ( (paymentMethod === 'momo' || paymentMethod === 'orange') ? paymentPhone : true )
                 ? 'bg-orange-500 text-white hover:bg-orange-600'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
@@ -94,6 +104,16 @@ export default function CheckoutPage() {
             {!checkoutAddress && (
               <p className="text-center text-sm text-gray-500 mt-3">
                 Please confirm your delivery address to continue
+              </p>
+            )}
+            {!paymentMethod && checkoutAddress && (
+              <p className="text-center text-sm text-gray-500 mt-3">
+                Please select a payment method to continue
+              </p>
+            )}
+            {paymentMethod && (paymentMethod === 'momo' || paymentMethod === 'orange') && !paymentPhone && checkoutAddress && (
+              <p className="text-center text-sm text-gray-500 mt-3">
+                Please provide a payment phone number
               </p>
             )}
           </section>
