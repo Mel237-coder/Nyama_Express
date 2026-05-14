@@ -7,62 +7,51 @@ interface NavItemDef {
   href: string;
   icon: React.ReactNode;
   label: string;
+  color: string;
+  bg: string;
 }
 
 const navItems: NavItemDef[] = [
-  { href: '/', icon: <Home className="w-6 h-6" />, label: 'Accueil' },
-  { href: '/restaurants', icon: <UtensilsCrossed className="w-6 h-6" />, label: 'Restos' },
-  { href: '/cart', icon: <ShoppingCart className="w-6 h-6" />, label: 'Panier' },
-  { href: '/orders', icon: <ClipboardList className="w-6 h-6" />, label: 'Commandes' },
-  { href: '/profile', icon: <User className="w-6 h-6" />, label: 'Profil' },
+  { href: '/', icon: <Home className="w-5 h-5" />, label: 'Accueil', color: '#D84315', bg: '#FEF0EB' },
+  { href: '/restaurants', icon: <UtensilsCrossed className="w-5 h-5" />, label: 'Restos', color: '#166534', bg: '#DCFCE7' },
+  { href: '/cart', icon: <ShoppingCart className="w-5 h-5" />, label: 'Panier', color: '#D97706', bg: '#FEF3C7' },
+  { href: '/orders', icon: <ClipboardList className="w-5 h-5" />, label: 'Commandes', color: '#2563EB', bg: '#DBEAFE' },
+  { href: '/profile', icon: <User className="w-5 h-5" />, label: 'Profil', color: '#1C1917', bg: '#F5F2ED' },
 ];
 
 export const NeonBottomNav: React.FC = () => {
   const router = useRouter();
 
   return (
-    <nav className="bottom-nav-glass safe-area-bottom">
-      {navItems.map((item) => {
-        const isActive = router.pathname === item.href;
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="flex flex-col items-center justify-center gap-1 flex-1 py-2 relative"
-            aria-label={item.label}
-          >
-            <span
-              className={
-                isActive
-                  ? 'transition-transform duration-200 scale-110'
-                  : 'opacity-50 transition-opacity duration-200 text-white/40'
-              }
-              style={isActive ? { color: '#FFD600' } : undefined}
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[#E7E5E4] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] safe-area-bottom">
+      <div className="flex justify-around items-center h-[68px] px-2">
+        {navItems.map((item) => {
+          const isActive = router.pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-2 rounded-2xl transition-all duration-200 ${isActive ? 'scale-105' : 'hover:scale-105'}`}
+              aria-label={item.label}
             >
-              {item.icon}
-            </span>
-            <span
-              className={
-                isActive
-                  ? 'text-[10px] font-semibold tracking-wide transition-colors duration-200'
-                  : 'text-[10px] font-medium text-white/40 transition-colors duration-200'
-              }
-              style={isActive ? { color: '#FFD600' } : undefined}
-            >
-              {item.label}
-            </span>
-            {isActive && (
+              <div
+                className={`p-1.5 rounded-xl transition-all duration-200 ${isActive ? 'shadow-sm' : ''}`}
+                style={{ backgroundColor: isActive ? item.bg : 'transparent' }}
+              >
+                <span style={{ color: isActive ? item.color : '#A8A29E' }}>
+                  {item.icon}
+                </span>
+              </div>
               <span
-                className="absolute bottom-1 w-1 h-1 rounded-full"
-                style={{
-                  backgroundColor: '#FFD600',
-                  boxShadow: '0 0 6px rgba(255, 214, 0, 0.8)',
-                }}
-              />
-            )}
-          </Link>
-        );
-      })}
+                className="text-[10px] font-bold transition-colors duration-200"
+                style={{ color: isActive ? item.color : '#A8A29E' }}
+              >
+                {item.label}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
     </nav>
   );
 };

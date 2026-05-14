@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, ShoppingBag } from 'lucide-react';
 import { useCart } from '../../hooks/useCart';
 import { useLanguage } from '../../hooks/useLanguage';
 import { t, formatPrice } from '../../lib/i18n';
@@ -16,19 +16,22 @@ export const FloatingCartBar: React.FC = () => {
   return (
     <Link
       href="/cart"
-      className="fixed bottom-20 left-4 right-4 z-40 glass-elevated p-4 rounded-2xl flex items-center justify-between transition-transform active:scale-95 animate-slide-up"
+      className="fixed bottom-20 left-4 right-4 z-40 bg-white border border-[#E7E5E4] shadow-lg p-4 rounded-2xl flex items-center justify-between transition-transform active:scale-95 animate-slide-up"
     >
       <div className="flex items-center gap-3">
-        <span className="neon-badge text-sm px-2.5 py-1">
-          {itemCount}
-        </span>
-        <span className="font-medium text-white">
+        <div className="w-9 h-9 rounded-xl bg-[#FEF0EB] flex items-center justify-center">
+          <ShoppingBag className="w-5 h-5 text-[#D84315]" />
+        </div>
+        <span className="font-bold text-[#1C1917]">
           {t('cart', language)}
         </span>
+        <span className="bg-[#D84315] text-white text-xs font-bold px-2 py-0.5 rounded-full">
+          {itemCount}
+        </span>
       </div>
-      <div className="flex items-center gap-2 font-bold text-[#FFD600]">
+      <div className="flex items-center gap-2 font-bold text-[#D84315]">
         <span>{formatPrice(total)}</span>
-        <ChevronRight className="w-4 h-4 opacity-80" style={{ color: '#FFD600' }} />
+        <ChevronRight className="w-4 h-4" />
       </div>
     </Link>
   );

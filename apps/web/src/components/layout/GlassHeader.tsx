@@ -15,17 +15,11 @@ export const GlassHeader: React.FC<GlassHeaderProps> = ({
     <header
       className={
         sticky
-          ? 'sticky top-0 z-30 px-4 py-3 flex items-center justify-between'
-          : 'px-4 py-3 flex items-center justify-between'
+          ? 'sticky top-0 z-30 px-5 py-3.5 flex items-center justify-between bg-white/95 backdrop-blur-xl border-b border-[#E7E5E4]'
+          : 'px-5 py-3.5 flex items-center justify-between bg-white border-b border-[#E7E5E4]'
       }
-      style={{
-        backgroundColor: 'rgba(10, 10, 15, 0.8)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-      }}
     >
-      <h1 className="text-lg font-bold text-white tracking-tight">{title}</h1>
+      <h1 className="text-lg font-bold text-[#1C1917] tracking-tight">{title}</h1>
       {right && <div className="flex items-center gap-2">{right}</div>}
     </header>
   );
