@@ -12,6 +12,11 @@ class ApiClient {
   private baseUrl = API_URL;
 
   private async fetch<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
+    if (!endpoint || endpoint === '/') {
+      console.error('[ApiClient] Empty endpoint requested. Options:', options);
+      throw new Error('Empty API endpoint');
+    }
+
     const { token, ...fetchOptions } = options;
 
     const headers: HeadersInit = {
@@ -40,17 +45,17 @@ class ApiClient {
   // AUTH
   // ============================================
 
-  async requestOtp(phone: string) {
+  async requestOtp(email: string, phone?: string) {
     return this.fetch('/api/auth/request-otp', {
       method: 'POST',
-      body: JSON.stringify({ phone }),
+      body: JSON.stringify({ email, phone }),
     });
   }
 
-  async verifyOtp(phone: string, code: string) {
+  async verifyOtp(email: string, code: string) {
     return this.fetch('/api/auth/verify-otp', {
       method: 'POST',
-      body: JSON.stringify({ phone, code }),
+      body: JSON.stringify({ email, code }),
     });
   }
 
@@ -67,6 +72,61 @@ class ApiClient {
       body: JSON.stringify({ userId }),
       token,
     });
+  }
+
+  // ============================================
+  // USERS (ADMIN)
+  // ============================================
+
+  async getUsers(params?: {
+    role?: string;
+    status?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }, token?: string) {
+    const query = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value) query.append(key, value.toString());
+      });
+    }
+    return this.fetch(`/api/users?${query.toString()}`, { token });
+  }
+
+  async getUser(id: string, token?: string) {
+    return this.fetch(`/api/users/${id}`, { token });
+  }
+
+  async updateUser(id: string, data: any, token?: string) {
+    return this.fetch(`/api/users/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+      token,
+    });
+  }
+
+  async deleteUser(id: string, token?: string) {
+    return this.fetch(`/api/users/${id}`, {
+      method: 'DELETE',
+      token,
+    });
+  }
+
+  async getUserStats(token?: string) {
+    return this.fetch('/api/users/stats', { token });
+  }
+
+  // ============================================
+  // ADMIN DASHBOARD
+  // ============================================
+
+  async getAdminDashboard(token?: string) {
+    return this.fetch('/api/admin/dashboard', { token });
+  }
+
+  async getAdminActivity(token?: string) {
+    return this.fetch('/api/admin/activity', { token });
   }
 
   // ============================================
@@ -135,10 +195,21 @@ class ApiClient {
     return this.fetch(`/api/orders/${orderId}`, { token });
   }
 
+  async getDeliveryTracking(orderId: string, token: string) {
+    return this.fetch(`/api/orders/${orderId}/tracking`, { token });
+  }
+
   async updateOrderStatus(orderId: string, status: string, token: string) {
     return this.fetch(`/api/orders/${orderId}/status`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
+      token,
+    });
+  }
+
+  async confirmDelivery(orderId: string, token: string) {
+    return this.fetch(`/api/orders/${orderId}/confirm-delivery`, {
+      method: 'POST',
       token,
     });
   }
@@ -218,6 +289,28 @@ class ApiClient {
     });
   }
 
+  async updateAddress(addressId: string, data: {
+    label: string;
+    street: string;
+    latitude?: number;
+    longitude?: number;
+    zoneId?: string;
+    isDefault?: boolean;
+  }, token: string) {
+    return this.fetch(`/api/users/addresses/${addressId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+      token,
+    });
+  }
+
+  async deleteAddress(addressId: string, token: string) {
+    return this.fetch(`/api/users/addresses/${addressId}`, {
+      method: 'DELETE',
+      token,
+    });
+  }
+
   async updateItemAvailability(itemId: string, available: boolean, token: string) {
     return this.fetch(`/api/menu-items/${itemId}/availability`, {
       method: 'PATCH',
@@ -250,6 +343,55 @@ class ApiClient {
     });
   }
 
+  // ============================================
+  // DELIVERERS
+  // ============================================
+
+  async registerDeliverer(data: {
+    phone: string; firstName: string; lastName: string;
+    cniNumber: string; cniPhotoUrl: string; selfieUrl: string;
+    vehicleType: string; vehiclePlate?: string; zoneId: string;
+  }) {
+    return this.fetch('/api/deliverers/register', { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  async getDelivererStatus(token: string) { return this.fetch('/api/deliverers/status', { token }); }
+  async setDelivererOnline(token: string) { return this.fetch('/api/deliverers/online', { method: 'POST', token }); }
+  async setDelivererOffline(token: string) { return this.fetch('/api/deliverers/offline', { method: 'POST', token }); }
+  async updateDelivererLocation(token: string, lat: number, lng: number) {
+    return this.fetch('/api/deliverers/location', { method: 'POST', body: JSON.stringify({ latitude: lat, longitude: lng }), token });
+  }
+  async getMissions(token: string, status?: string) {
+    const query = status ? `?status=${status}` : '';
+    return this.fetch(`/api/deliverers/missions${query}`, { token });
+  }
+  async acceptMission(orderId: string, token: string) {
+    return this.fetch(`/api/deliverers/missions/${orderId}/accept`, { method: 'POST', token });
+  }
+  async updateMissionStatus(orderId: string, status: string, token: string) {
+    return this.fetch(`/api/deliverers/missions/${orderId}/status`, { method: 'PATCH', body: JSON.stringify({ status }), token });
+  }
+  async getEarnings(token: string) { return this.fetch('/api/deliverers/earnings', { token }); }
+  async getWithdrawals(token: string) { return this.fetch('/api/deliverers/withdrawals', { token }); }
+  async createWithdrawal(data: { amount: number; provider: string; providerAccount: string }, token: string) {
+    return this.fetch('/api/deliverers/withdrawals', { method: 'POST', body: JSON.stringify(data), token });
+  }
+  async getDelivererProfile(token: string) { return this.fetch('/api/deliverers/profile', { token }); }
+  async updateDelivererProfile(data: any, token: string) {
+    return this.fetch('/api/deliverers/profile', { method: 'PATCH', body: JSON.stringify(data), token });
+  }
+
+  // ============================================
+  // USERS — BECOME DELIVERER
+  // ============================================
+
+  async becomeDeliverer(data: {
+    cniNumber: string; cniPhotoUrl: string; selfieUrl: string;
+    vehicleType: string; vehiclePlate?: string; zoneId: string;
+  }, token: string) {
+    return this.fetch('/api/users/become-deliverer', { method: 'PATCH', body: JSON.stringify(data), token });
+  }
+}
 
 export const api = new ApiClient();
 
