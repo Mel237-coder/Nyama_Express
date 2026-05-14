@@ -192,4 +192,66 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
       timestamp: new Date().toISOString(),
     });
   }
+
+  // ============================================
+  // MISSIONS
+  // ============================================
+
+  @SubscribeMessage('deliverer:online')
+  handleDelivererOnline(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() data: { lat: number; lng: number },
+  ) {
+    if (client.userRole !== 'DELIVERY_PERSON') {
+      client.emit('error', { message: 'Unauthorized' });
+      return;
+    }
+    client.join('role:delivery');
+    this.logger.log(`Courier ${client.userId} is now online at ${data.lat},${data.lng}`);
+    client.emit('deliverer:online_ack', { success: true });
+  }
+
+  @SubscribeMessage('deliverer:offline')
+  handleDelivererOffline(@ConnectedSocket() client: AuthenticatedSocket) {
+    if (client.userRole !== 'DELIVERY_PERSON') return;
+    client.leave('role:delivery');
+    this.logger.log(`Courier ${client.userId} is now offline`);
+    client.emit('deliverer:offline_ack', { success: true });
+  }
+
+  @SubscribeMessage('mission:new')
+  handleNewMission(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() data: { orderId: string; restaurantId: string },
+  ) {
+    this.server.to('role:delivery').emit('mission:new', {
+      orderId: data.orderId,
+      restaurantId: data.restaurantId,
+      timestamp: new Date().toISOString(),
+    });
+    this.logger.log(`New mission ${data.orderId} broadcasted to delivery pool`);
+  }
+
+  @SubscribeMessage('mission:assigned')
+  handleMissionAssigned(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() data: { orderId: string; delivererId: string },
+  ) {
+    this.server.to(`user:${data.delivererId}`).emit('mission:assigned', {
+      orderId: data.orderId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  @SubscribeMessage('mission:cancelled')
+  handleMissionCancelled(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() data: { orderId: string; reason?: string },
+  ) {
+    this.server.to(`order:${data.orderId}`).emit('mission:cancelled', {
+      orderId: data.orderId,
+      reason: data.reason,
+      timestamp: new Date().toISOString(),
+    });
+  }
 }
