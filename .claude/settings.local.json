@@ -67,7 +67,14 @@
       "Bash(DATABASE_URL=\"postgresql://foodapp:foodapp_secret@localhost:5432/foodapp\" npx prisma db push --accept-data-loss)",
       "Bash(DATABASE_URL=\"postgresql://foodapp:foodapp_secret@localhost:5432/foodapp\" npx prisma db push --force-reset)",
       "Bash(node *)",
-      "Bash(gh pr *)"
+      "Bash(gh pr *)",
+      "Bash(Get-Process node *)",
+      "Bash(Stop-Process -Force)",
+      "Bash(Remove-Item -Recurse -Force apps/web/.next)",
+      "Bash(netstat -ano)",
+      "Bash(findstr :3002)",
+      "Bash(awk '{print $5}')",
+      "PowerShell(Stop-Process *)"
     ]
   }
 }

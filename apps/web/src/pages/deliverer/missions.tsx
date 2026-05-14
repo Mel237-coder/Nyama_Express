@@ -29,13 +29,14 @@ export default function DelivererMissions() {
   };
 
   return (
-    <div className="p-5">
-      <h1 className="text-2xl font-extrabold text-[#1A1A1A] mb-5 animate-fade-in-up">Missions</h1>
+    <div className="p-6 font-body">
+      <p className="text-[#9B958D] text-xs font-semibold tracking-widest uppercase mb-1 animate-reveal-up">Opportunités</p>
+      <h1 className="font-display text-3xl text-[#1C1917] mb-6 animate-reveal-up stagger-1">Missions</h1>
 
-      <div className="flex gap-2 mb-5 p-1 bg-white rounded-2xl shadow-sm animate-fade-in-up stagger-1">
+      <div className="flex gap-2 mb-6 p-1.5 bg-white rounded-[20px] shadow-warm-sm animate-reveal-up stagger-2">
         {(['available', 'active', 'history'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
-            className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${tab === t ? 'bg-[#D84315] text-white shadow-md' : 'text-[#666666] hover:text-[#1A1A1A]'}`}
+            className={`flex-1 py-3 rounded-[16px] text-xs font-bold transition-all font-body ${tab === t ? 'bg-gradient-to-r from-[#C73E1D] to-[#D84315] text-white shadow-terracotta' : 'text-[#6B6560] hover:text-[#1C1917]'}`}
           >
             {t === 'available' ? 'Disponibles' : t === 'active' ? 'Actives' : 'Historique'}
           </button>
@@ -43,17 +44,20 @@ export default function DelivererMissions() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-2 border-[#D84315] border-t-transparent rounded-full animate-spin" />
+        <div className="flex items-center justify-center py-16">
+          <div className="w-10 h-10 border-[3px] border-[#C73E1D] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : missions.length === 0 ? (
-        <div className="text-center py-12 animate-fade-in">
-          <p className="text-[#999999]">Aucune mission</p>
+        <div className="text-center py-16 animate-reveal-up">
+          <div className="w-16 h-16 rounded-2xl bg-[#E8E0D4] flex items-center justify-center mx-auto mb-4">
+            <span className="text-2xl">📭</span>
+          </div>
+          <p className="text-[#9B958D] font-medium">Aucune mission pour le moment</p>
         </div>
       ) : (
         <div className="space-y-4">
           {missions.map((mission, i) => (
-            <div key={mission.id} style={{ animationDelay: `${i * 0.1}s` }}>
+            <div key={mission.id} style={{ animationDelay: `${i * 0.08}s` }} className="animate-reveal-up">
               <MissionCard mission={mission} showAccept={tab === 'available'} onAccept={() => acceptMission(mission.id)} />
             </div>
           ))}

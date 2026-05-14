@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { api, storage } from '../../lib/api';
 import { EarningsCard } from '../../components/deliverer/EarningsCard';
+import { ArrowUpRight } from 'lucide-react';
 
 export default function DelivererEarnings() {
   const [earnings, setEarnings] = useState<any>(null);
@@ -13,35 +14,40 @@ export default function DelivererEarnings() {
     api.getEarnings(token).then(setEarnings).catch(console.error);
   }, [token, router]);
 
-  if (!earnings) return <div className="p-4 text-[#999999]">Chargement...</div>;
+  if (!earnings) return <div className="p-4 text-[#9B958D] font-body">Chargement...</div>;
 
   return (
-    <div className="p-5">
-      <h1 className="text-2xl font-extrabold text-[#1A1A1A] mb-5 animate-fade-in-up">Gains</h1>
+    <div className="p-6 font-body">
+      <p className="text-[#9B958D] text-xs font-semibold tracking-widest uppercase mb-1 animate-reveal-up">Finances</p>
+      <h1 className="font-display text-3xl text-[#1C1917] mb-6 animate-reveal-up stagger-1">Gains</h1>
       <EarningsCard totalEarned={earnings.totalEarned} totalWithdrawn={earnings.totalWithdrawn} balance={earnings.balance} />
 
-      <h2 className="font-bold text-[#1A1A1A] mt-6 mb-3 text-sm">Historique</h2>
+      <h2 className="font-bold text-[#1C1917] mt-8 mb-4 text-sm font-body flex items-center gap-2">
+        <span className="w-1.5 h-1.5 rounded-full bg-[#D4A017]" /> Historique
+      </h2>
       <div className="space-y-3">
         {earnings.history?.map((item: any, i: number) => (
-          <div key={item.id} className="card-premium p-4 flex justify-between items-center animate-fade-in-up" style={{ animationDelay: `${i * 0.05}s` }}>
+          <div key={item.id} className="card-luxe-sym p-4 flex justify-between items-center animate-reveal-up" style={{ animationDelay: `${i * 0.05}s` }}>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#F9A825] to-[#F57F17] flex items-center justify-center shadow-sm">
+              <div className="w-10 h-10 rounded-xl icon-box-gold flex items-center justify-center shadow-sm">
                 <span className="text-white font-bold text-xs">{item.earning}</span>
               </div>
               <div>
-                <p className="font-bold text-[#1A1A1A] text-sm">{item.restaurant?.name}</p>
-                <p className="text-[#999999] text-xs">{new Date(item.createdAt).toLocaleDateString('fr-FR')}</p>
+                <p className="font-bold text-[#1C1917] text-sm font-body">{item.restaurant?.name}</p>
+                <p className="text-[#9B958D] text-xs">{new Date(item.createdAt).toLocaleDateString('fr-FR')}</p>
               </div>
             </div>
             <div className="text-right">
-              <p className="font-bold text-[#2E7D32]">+{item.earning} FCFA</p>
-              <p className="text-[#999999] text-[10px]">Comm. {item.commission}</p>
+              <p className="font-bold text-[#3D6B4F] font-body">+{item.earning} FCFA</p>
+              <p className="text-[#9B958D] text-[10px]">Comm. {item.commission}</p>
             </div>
           </div>
         ))}
       </div>
 
-      <button onClick={() => router.push('/deliverer/withdrawals')} className="w-full mt-6 btn-premium py-4">Retirer mes gains</button>
+      <button onClick={() => router.push('/deliverer/withdrawals')} className="w-full mt-6 btn-luxe py-4 flex items-center justify-center gap-2">
+        Retirer mes gains <ArrowUpRight className="w-4 h-4" />
+      </button>
     </div>
   );
 }

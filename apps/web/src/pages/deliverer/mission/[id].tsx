@@ -25,20 +25,20 @@ export default function MissionDetail() {
     } catch (e) { alert('Erreur de mise à jour'); }
   };
 
-  if (!mission) return <div className="p-4 text-[#999999]">Chargement...</div>;
+  if (!mission) return <div className="p-4 text-[#9B958D] font-body">Chargement...</div>;
 
   return (
-    <div className="p-5">
-      <button onClick={() => router.back()} className="flex items-center gap-2 text-[#666666] mb-5 hover:text-[#1A1A1A] transition-colors">
+    <div className="p-6 font-body">
+      <button onClick={() => router.back()} className="flex items-center gap-2 text-[#6B6560] mb-6 hover:text-[#1C1917] transition-colors animate-reveal-up">
         <ArrowLeft className="w-5 h-5" /> Retour
       </button>
 
-      <div className="mb-5 animate-fade-in-up">
-        <p className="text-[#999999] text-xs font-medium mb-1">MISSION #{mission.id?.slice(-6).toUpperCase()}</p>
-        <h1 className="text-2xl font-extrabold text-[#1A1A1A]">{mission.restaurant?.name}</h1>
+      <div className="mb-6 animate-reveal-up stagger-1">
+        <p className="text-[#9B958D] text-xs font-semibold tracking-widest uppercase mb-1">MISSION #{mission.id?.slice(-6).toUpperCase()}</p>
+        <h1 className="font-display text-3xl text-[#1C1917]">{mission.restaurant?.name}</h1>
       </div>
 
-      <div className="rounded-3xl overflow-hidden shadow-lg mb-5 animate-fade-in-up stagger-1">
+      <div className="rounded-[24px] overflow-hidden shadow-warm mb-6 animate-reveal-up stagger-2">
         <TrackingMap
           lat={mission.restaurant?.latitude || 3.848}
           lng={mission.restaurant?.longitude || 11.5021}
@@ -49,27 +49,27 @@ export default function MissionDetail() {
         />
       </div>
 
-      <div className="space-y-3 mb-5">
-        <div className="card-premium p-4 flex items-start gap-3 animate-fade-in-up stagger-2">
-          <div className="w-10 h-10 rounded-xl bg-[#D84315]/10 flex items-center justify-center shrink-0"><MapPin className="w-5 h-5 text-[#D84315]" /></div>
+      <div className="space-y-3 mb-6">
+        <div className="card-luxe p-5 flex items-start gap-3 animate-reveal-up stagger-3">
+          <div className="w-10 h-10 rounded-xl bg-[#C73E1D]/10 flex items-center justify-center shrink-0"><MapPin className="w-5 h-5 text-[#C73E1D]" /></div>
           <div>
-            <p className="font-bold text-[#1A1A1A] text-sm">Restaurant</p>
-            <p className="text-[#666666] text-xs">{mission.restaurant?.address}</p>
-            <a href={`tel:${mission.restaurant?.phone}`} className="flex items-center gap-1 text-[#D84315] text-xs mt-1 font-bold"><Phone className="w-3 h-3" /> Appeler</a>
+            <p className="font-bold text-[#1C1917] text-sm font-body">Restaurant</p>
+            <p className="text-[#6B6560] text-xs">{mission.restaurant?.address}</p>
+            <a href={`tel:${mission.restaurant?.phone}`} className="flex items-center gap-1 text-[#C73E1D] text-xs mt-1 font-bold"><Phone className="w-3 h-3" /> Appeler</a>
           </div>
         </div>
 
-        <div className="card-premium p-4 flex items-start gap-3 animate-fade-in-up stagger-3">
-          <div className="w-10 h-10 rounded-xl bg-[#2E7D32]/10 flex items-center justify-center shrink-0"><MapPin className="w-5 h-5 text-[#2E7D32]" /></div>
+        <div className="card-luxe p-5 flex items-start gap-3 animate-reveal-up stagger-4">
+          <div className="w-10 h-10 rounded-xl bg-[#3D6B4F]/10 flex items-center justify-center shrink-0"><MapPin className="w-5 h-5 text-[#3D6B4F]" /></div>
           <div>
-            <p className="font-bold text-[#1A1A1A] text-sm">Client</p>
-            <p className="text-[#666666] text-xs">{mission.deliveryAddress}</p>
-            <p className="text-[#666666] text-xs">{mission.client?.firstName} {mission.client?.lastName}</p>
+            <p className="font-bold text-[#1C1917] text-sm font-body">Client</p>
+            <p className="text-[#6B6560] text-xs">{mission.deliveryAddress}</p>
+            <p className="text-[#6B6560] text-xs">{mission.client?.firstName} {mission.client?.lastName}</p>
           </div>
         </div>
       </div>
 
-      <div className="animate-fade-in-up stagger-4"><StatusButtons currentStatus={mission.status} onStatusChange={handleStatusChange} /></div>
+      <div className="animate-reveal-up stagger-5"><StatusButtons currentStatus={mission.status} onStatusChange={handleStatusChange} /></div>
     </div>
   );
 }
