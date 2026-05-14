@@ -13,7 +13,7 @@ export default function DelivererDashboard() {
 
   useEffect(() => {
     if (!token) { router.push('/deliverer/login'); return; }
-    api.getDelivererStatus(token).then(s => { setStatus(s); setOnline(s.isOnline); }).catch(() => router.push('/deliverer/login')).finally(() => setLoading(false));
+    api.getDelivererStatus(token).then((s: any) => { setStatus(s); setOnline(s.isOnline); }).catch(() => router.push('/deliverer/login')).finally(() => setLoading(false));
   }, [token, router]);
 
   const toggleOnline = async () => {

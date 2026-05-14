@@ -17,7 +17,7 @@ export default function DelivererWithdrawals() {
   }, [token, router]);
 
   const loadData = async () => {
-    const [wList, earnings] = await Promise.all([api.getWithdrawals(token!), api.getEarnings(token!)]);
+    const [wList, earnings] = await Promise.all([api.getWithdrawals(token!), api.getEarnings(token!)]) as [any[], any];
     setWithdrawals(wList || []);
     setBalance(earnings.balance);
   };

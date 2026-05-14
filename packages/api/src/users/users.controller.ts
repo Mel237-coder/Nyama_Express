@@ -108,7 +108,7 @@ export class UsersController {
   @Patch('become-deliverer')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  async becomeDeliverer(@Request() req, @Body() data: {
+  async becomeDeliverer(@Request() req: any, @Body() data: {
     cniNumber: string;
     cniPhotoUrl: string;
     selfieUrl: string;

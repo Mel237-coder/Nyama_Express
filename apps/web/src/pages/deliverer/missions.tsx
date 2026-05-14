@@ -17,7 +17,7 @@ export default function DelivererMissions() {
 
   const loadMissions = async () => {
     setLoading(true);
-    try { const data = await api.getMissions(token!, tab); setMissions(data || []); }
+    try { const data = await api.getMissions(token!, tab) as any[]; setMissions(data || []); }
     catch (e) { console.error(e); }
     finally { setLoading(false); }
   };

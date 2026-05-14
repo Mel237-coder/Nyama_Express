@@ -18,41 +18,41 @@ export class DeliverersController {
   @Post('register') async register(@Body() dto: RegisterDelivererDto) { return this.deliverersService.register(dto); }
 
   @Get('status') @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.DELIVERY_PERSON) @ApiBearerAuth()
-  async getStatus(@Request() req) { return this.deliverersService.getStatus(req.user.userId); }
+  async getStatus(@Request() req: any) { return this.deliverersService.getStatus(req.user.userId); }
 
   @Patch('status') @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.DELIVERY_PERSON) @ApiBearerAuth()
-  async updateStatus(@Request() req, @Body() dto: UpdateDelivererStatusDto) { return this.deliverersService.updateStatus(req.user.userId, dto); }
+  async updateStatus(@Request() req: any, @Body() dto: UpdateDelivererStatusDto) { return this.deliverersService.updateStatus(req.user.userId, dto); }
 
   @Post('online') @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.DELIVERY_PERSON) @ApiBearerAuth()
-  async setOnline(@Request() req) { return this.deliverersService.setOnline(req.user.userId, true); }
+  async setOnline(@Request() req: any) { return this.deliverersService.setOnline(req.user.userId, true); }
 
   @Post('offline') @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.DELIVERY_PERSON) @ApiBearerAuth()
-  async setOffline(@Request() req) { return this.deliverersService.setOnline(req.user.userId, false); }
+  async setOffline(@Request() req: any) { return this.deliverersService.setOnline(req.user.userId, false); }
 
   @Post('location') @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.DELIVERY_PERSON) @ApiBearerAuth()
-  async updateLocation(@Request() req, @Body() dto: UpdateLocationDto) { return this.deliverersService.updateLocation(req.user.userId, dto); }
+  async updateLocation(@Request() req: any, @Body() dto: UpdateLocationDto) { return this.deliverersService.updateLocation(req.user.userId, dto); }
 
   @Get('missions') @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.DELIVERY_PERSON) @ApiBearerAuth()
-  async getMissions(@Request() req, @Query('status') status?: string) { return this.deliverersService.getMissions(req.user.userId, status); }
+  async getMissions(@Request() req: any, @Query('status') status?: string) { return this.deliverersService.getMissions(req.user.userId, status); }
 
   @Post('missions/:id/accept') @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.DELIVERY_PERSON) @ApiBearerAuth()
-  async acceptMission(@Request() req, @Param('id') orderId: string) { return this.deliverersService.acceptMission(req.user.userId, orderId); }
+  async acceptMission(@Request() req: any, @Param('id') orderId: string) { return this.deliverersService.acceptMission(req.user.userId, orderId); }
 
   @Patch('missions/:id/status') @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.DELIVERY_PERSON) @ApiBearerAuth()
-  async updateMissionStatus(@Request() req, @Param('id') orderId: string, @Body('status') status: any) { return this.deliverersService.updateMissionStatus(req.user.userId, orderId, status); }
+  async updateMissionStatus(@Request() req: any, @Param('id') orderId: string, @Body('status') status: any) { return this.deliverersService.updateMissionStatus(req.user.userId, orderId, status); }
 
   @Get('earnings') @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.DELIVERY_PERSON) @ApiBearerAuth()
-  async getEarnings(@Request() req) { return this.deliverersService.getEarnings(req.user.userId); }
+  async getEarnings(@Request() req: any) { return this.deliverersService.getEarnings(req.user.userId); }
 
   @Get('withdrawals') @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.DELIVERY_PERSON) @ApiBearerAuth()
-  async getWithdrawals(@Request() req) { return this.deliverersService.getWithdrawals(req.user.userId); }
+  async getWithdrawals(@Request() req: any) { return this.deliverersService.getWithdrawals(req.user.userId); }
 
   @Post('withdrawals') @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.DELIVERY_PERSON) @ApiBearerAuth()
-  async createWithdrawal(@Request() req, @Body() dto: CreateWithdrawalDto) { return this.deliverersService.createWithdrawal(req.user.userId, dto); }
+  async createWithdrawal(@Request() req: any, @Body() dto: CreateWithdrawalDto) { return this.deliverersService.createWithdrawal(req.user.userId, dto); }
 
   @Get('profile') @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.DELIVERY_PERSON) @ApiBearerAuth()
-  async getProfile(@Request() req) { return this.deliverersService.getProfile(req.user.userId); }
+  async getProfile(@Request() req: any) { return this.deliverersService.getProfile(req.user.userId); }
 
   @Patch('profile') @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.DELIVERY_PERSON) @ApiBearerAuth()
-  async updateProfile(@Request() req, @Body() data: any) { return this.deliverersService.updateProfile(req.user.userId, data); }
+  async updateProfile(@Request() req: any, @Body() data: any) { return this.deliverersService.updateProfile(req.user.userId, data); }
 }

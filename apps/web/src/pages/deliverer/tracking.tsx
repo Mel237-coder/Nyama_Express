@@ -12,7 +12,7 @@ export default function DelivererTracking() {
 
   useEffect(() => {
     if (!token) { router.push('/deliverer/login'); return; }
-    api.getMissions(token, 'active').then(missions => { if (missions?.length > 0) setActiveMission(missions[0]); });
+    api.getMissions(token, 'active').then((missions: any[]) => { if (missions?.length > 0) setActiveMission(missions[0]); });
     const watchId = navigator.geolocation.watchPosition(
       pos => {
         const { latitude, longitude } = pos.coords;
