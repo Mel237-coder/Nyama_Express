@@ -4,6 +4,7 @@
 
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { RestaurantsModule } from './restaurants/restaurants.module';
@@ -12,6 +13,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { DeliveriesModule } from './deliveries/deliveries.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AdminModule } from './admin/admin.module';
+import { DeliverersModule } from './deliverers/deliverers.module';
 import { WebsocketModule } from './websocket/websocket.module';
 
 @Module({
@@ -31,7 +33,9 @@ import { WebsocketModule } from './websocket/websocket.module';
     DeliveriesModule,
     NotificationsModule,
     AdminModule,
+    DeliverersModule,
     WebsocketModule,
   ],
+  controllers: [AppController],
 })
 export class AppModule {}
