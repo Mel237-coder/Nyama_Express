@@ -27,21 +27,21 @@ export default function DelivererTracking() {
 
   if (!activeMission) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 font-body">
-        <div className="text-center animate-reveal-up">
-          <div className="w-20 h-20 rounded-full bg-[#F3EDE4] flex items-center justify-center mx-auto mb-4"><Radio className="w-10 h-10 text-[#9B958D]" /></div>
-          <p className="text-[#6B6560] mb-4 font-medium">Aucune mission active</p>
-          <button onClick={() => router.push('/deliverer/missions')} className="btn-luxe py-3 px-6">Voir les missions</button>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center animate-slide-up">
+          <div className="w-16 h-16 rounded-2xl bg-[#F5F2ED] flex items-center justify-center mx-auto mb-3"><Radio className="w-8 h-8 text-[#A8A29E]" /></div>
+          <p className="text-[#78716C] mb-4 font-medium">Aucune mission active</p>
+          <button onClick={() => router.push('/deliverer/missions')} className="dv-btn py-3 px-6">Voir les missions</button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 font-body">
-      <p className="text-[#9B958D] text-xs font-semibold tracking-widest uppercase mb-1 animate-reveal-up">Navigation</p>
-      <h1 className="font-display text-3xl text-[#1C1917] mb-5 animate-reveal-up stagger-1">Tracking</h1>
-      <div className="rounded-[24px] overflow-hidden shadow-warm mb-5 animate-reveal-up stagger-2">
+    <div className="p-6">
+      <p className="dv-section-label mb-1 animate-slide-up">Navigation</p>
+      <h1 className="dv-page-title mb-4 animate-slide-up d1">Tracking</h1>
+      <div className="mb-4 animate-slide-up d2">
         <TrackingMap
           lat={position.lat} lng={position.lng}
           restaurantLat={activeMission.restaurant?.latitude}
@@ -50,14 +50,14 @@ export default function DelivererTracking() {
           clientLng={activeMission.deliveryLongitude}
         />
       </div>
-      <div className="card-luxe p-5 mb-5 animate-reveal-up stagger-3">
-        <p className="font-bold text-[#1C1917] font-body">{activeMission.restaurant?.name}</p>
-        <p className="text-[#6B6560] text-sm">{activeMission.deliveryAddress}</p>
+      <div className="dv-card p-4 mb-4 animate-slide-up d3">
+        <p className="font-bold text-[#1C1917]">{activeMission.restaurant?.name}</p>
+        <p className="text-[#78716C] text-sm">{activeMission.deliveryAddress}</p>
       </div>
       <a
         href={`https://www.google.com/maps/dir/?api=1&destination=${activeMission.deliveryLatitude},${activeMission.deliveryLongitude}`}
         target="_blank" rel="noopener noreferrer"
-        className="w-full bg-gradient-to-r from-[#3D6B4F] to-[#2A4D38] text-white font-bold py-4 rounded-[16px] flex items-center justify-center gap-2 active:scale-[0.97] transition-all shadow-[0_4px_20px_rgba(61,107,79,0.3)] hover:shadow-[0_6px_28px_rgba(61,107,79,0.4)] animate-reveal-up stagger-4 font-body"
+        className="w-full bg-[#166534] text-white font-bold py-4 rounded-[14px] flex items-center justify-center gap-2 active:scale-[0.97] transition-all shadow-[0_4px_16px_rgba(22,101,52,0.30)] hover:shadow-[0_6px_24px_rgba(22,101,52,0.40)] animate-slide-up d4"
       >
         <Navigation className="w-5 h-5" /> Ouvrir dans Maps
       </a>
