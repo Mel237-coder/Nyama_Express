@@ -18,6 +18,7 @@ import {
   Heart,
   MapPin,
   ChevronRight,
+  ArrowUpRight,
 } from 'lucide-react';
 
 interface Restaurant {
@@ -45,10 +46,10 @@ interface Category {
 
 const CUISINE_CATEGORIES: Category[] = [
   { id: 'all', name: 'Tous', nameEn: 'All', icon: <UtensilsCrossed className="w-4 h-4" />, bg: '#F5F2ED', color: '#1C1917' },
-  { id: 'africaine', name: 'Africaine', nameEn: 'African', icon: <Soup className="w-4 h-4" />, bg: '#FEF0EB', color: '#D84315' },
-  { id: 'fast-food', name: 'Fast-Food', nameEn: 'Fast Food', icon: <Beef className="w-4 h-4" />, bg: '#FEF3C7', color: '#D97706' },
+  { id: 'africaine', name: 'Africaine', nameEn: 'African', icon: <Soup className="w-4 h-4" />, bg: '#FEF0EB', color: '#C2410C' },
+  { id: 'fast-food', name: 'Fast-Food', nameEn: 'Fast Food', icon: <Beef className="w-4 h-4" />, bg: '#FEF3C7', color: '#B45309' },
   { id: 'grillades', name: 'Grillades', nameEn: 'Grill', icon: <Flame className="w-4 h-4" />, bg: '#FEE2E2', color: '#DC2626' },
-  { id: 'asiatique', name: 'Asiatique', nameEn: 'Asian', icon: <Soup className="w-4 h-4" />, bg: '#DCFCE7', color: '#166534' },
+  { id: 'asiatique', name: 'Asiatique', nameEn: 'Asian', icon: <Soup className="w-4 h-4" />, bg: '#DCFCE7', color: '#15803D' },
   { id: 'indienne', name: 'Indienne', nameEn: 'Indian', icon: <Salad className="w-4 h-4" />, bg: '#F3E8FF', color: '#7C3AED' },
   { id: 'pizza', name: 'Pizza', nameEn: 'Pizza', icon: <Pizza className="w-4 h-4" />, bg: '#DBEAFE', color: '#2563EB' },
 ];
@@ -89,21 +90,24 @@ export default function HomePage() {
     return matchesSearch && matchesCategory;
   });
 
+  const featured = filteredRestaurants[0];
+  const rest = filteredRestaurants.slice(1);
+
   return (
-    <div className="min-h-screen pb-24 bg-[#DDD8CF]">
+    <div className="min-h-screen pb-24 bg-[#F7F3ED] font-sans">
       {/* ===== HEADER ===== */}
-      <header className="bg-white px-5 pt-6 pb-5 shadow-sm">
-        <div className="flex items-center justify-between mb-5">
+      <header className="px-5 pt-6 pb-4 animate-ed-reveal">
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <p className="text-[#A8A29E] text-xs font-semibold tracking-widest uppercase">Livraison à</p>
-            <div className="flex items-center gap-1 text-[#1C1917]">
-              <MapPin className="w-4 h-4 text-[#D84315]" />
+            <p className="text-[#A8A29E] text-[11px] font-bold tracking-[0.15em] uppercase mb-1">Livraison à</p>
+            <div className="flex items-center gap-1.5 text-[#1C1917]">
+              <MapPin className="w-4 h-4 text-[#C2410C]" strokeWidth={2.5} />
               <span className="font-bold text-sm">Yaoundé, Cameroun</span>
             </div>
           </div>
-          <div className="w-10 h-10 rounded-full bg-[#F5F2ED] flex items-center justify-center">
+          <button className="w-11 h-11 rounded-[14px] bg-white border border-[#E7E5E4] shadow-sm flex items-center justify-center hover:shadow-md transition-shadow">
             <Heart className="w-5 h-5 text-[#78716C]" />
-          </div>
+          </button>
         </div>
 
         {/* Search */}
@@ -114,13 +118,58 @@ export default function HomePage() {
             placeholder={t('searchPlaceholder') || 'Rechercher un restaurant...'}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-[#F5F2ED] text-[#1C1917] placeholder-[#A8A29E] rounded-2xl py-3.5 pl-12 pr-4 font-medium focus:outline-none focus:ring-2 focus:ring-[#D84315]/20 transition-all"
+            className="ed-input pl-12 shadow-sm"
           />
         </div>
       </header>
 
-      {/* ===== CATEGORIES PILLS ===== */}
-      <div className="mt-4 px-4">
+      {/* ===== HERO FEATURED (if available) ===== */}
+      {!loading && featured && !search && selectedCategory === 'all' && (
+        <div className="px-5 mt-2 animate-ed-reveal ed-d1">
+          <Link href={`/restaurant/${featured.id}`} className="block group">
+            <div className="relative rounded-[20px] overflow-hidden shadow-lg">
+              <img
+                src={featured.coverImage || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&q=80'}
+                alt={featured.name}
+                className="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-700"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+              <div className="absolute top-4 left-4">
+                <span className="ed-pill bg-[#C2410C] text-white shadow-md">
+                  À la une
+                </span>
+              </div>
+
+              <div className="absolute bottom-0 left-0 right-0 p-5">
+                <h2 className="font-serif text-3xl text-white italic leading-tight mb-1">
+                  {featured.name}
+                </h2>
+                <p className="text-white/70 text-sm font-medium">
+                  {featured.description || featured.address}
+                </p>
+                <div className="flex items-center gap-3 mt-3">
+                  <span className="flex items-center gap-1 text-white text-xs font-bold bg-white/20 backdrop-blur-sm px-2.5 py-1 rounded-full">
+                    <Star className="w-3 h-3 fill-[#F59E0B] text-[#F59E0B]" />
+                    {featured.avgRating.toFixed(1)}
+                  </span>
+                  <span className="flex items-center gap-1 text-white text-xs font-bold bg-white/20 backdrop-blur-sm px-2.5 py-1 rounded-full">
+                    <Clock className="w-3 h-3" />
+                    {featured.deliveryTime || 30} min
+                  </span>
+                  <span className="text-white/60 text-xs font-medium">
+                    {formatPrice(featured.deliveryFee)} livraison
+                  </span>
+                </div>
+              </div>
+            </div>
+          </Link>
+        </div>
+      )}
+
+      {/* ===== CATEGORIES ===== */}
+      <div className="mt-6 px-5 animate-ed-reveal ed-d2">
+        <p className="text-[11px] font-bold text-[#A8A29E] uppercase tracking-[0.15em] mb-3">Catégories</p>
         <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-hide">
           {CUISINE_CATEGORIES.map((cat) => (
             <button
@@ -132,8 +181,13 @@ export default function HomePage() {
                   : 'bg-white text-[#1C1917] border-[#E7E5E4] hover:border-[#D6D3D1]'
               }`}
             >
-              <span style={{ color: selectedCategory === cat.id ? 'white' : cat.color }}>
-                {cat.icon}
+              <span
+                className="p-1 rounded-lg"
+                style={{ backgroundColor: selectedCategory === cat.id ? 'rgba(255,255,255,0.15)' : cat.bg }}
+              >
+                <span style={{ color: selectedCategory === cat.id ? 'white' : cat.color }}>
+                  {cat.icon}
+                </span>
               </span>
               {language === 'fr' ? cat.name : cat.nameEn}
             </button>
@@ -142,28 +196,28 @@ export default function HomePage() {
       </div>
 
       {/* ===== FILTERS ===== */}
-      <div className="mt-3 px-4 flex gap-2 overflow-x-auto pb-1">
-        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FEF3C7] text-[#D97706] text-xs font-bold border border-[#FDE68A]">
-          <TrendingUp className="w-3.5 h-3.5" /> Les mieux notés
+      <div className="mt-3 px-5 flex gap-2 overflow-x-auto pb-1 animate-ed-reveal ed-d3">
+        <button className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#FEF3C7] text-[#B45309] text-xs font-bold border border-[#FDE68A]">
+          <TrendingUp className="w-3.5 h-3.5" /> Top rated
         </button>
-        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white text-[#78716C] text-xs font-bold border border-[#E7E5E4]">
+        <button className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white text-[#78716C] text-xs font-bold border border-[#E7E5E4]">
           <Clock className="w-3.5 h-3.5" /> Rapide
         </button>
-        <button className="px-3 py-1.5 rounded-full bg-white text-[#78716C] text-xs font-bold border border-[#E7E5E4]">
+        <button className="px-3.5 py-2 rounded-full bg-white text-[#78716C] text-xs font-bold border border-[#E7E5E4]">
           Gratuit
         </button>
       </div>
 
-      {/* ===== RESTAURANTS ===== */}
-      <div className="mt-5 px-4">
-        <p className="text-xs font-bold text-[#A8A29E] uppercase tracking-wider mb-3">
-          {filteredRestaurants.length} résultat{filteredRestaurants.length > 1 ? 's' : ''}
+      {/* ===== RESTAURANTS LIST ===== */}
+      <div className="mt-6 px-5">
+        <p className="text-[11px] font-bold text-[#A8A29E] uppercase tracking-[0.15em] mb-4 animate-ed-reveal ed-d4">
+          {filteredRestaurants.length} restaurant{filteredRestaurants.length > 1 ? 's' : ''}
         </p>
 
         {loading ? (
           <RestaurantSkeleton />
         ) : filteredRestaurants.length === 0 ? (
-          <div className="text-center py-16">
+          <div className="text-center py-16 animate-ed-reveal">
             <div className="w-16 h-16 rounded-2xl bg-[#F5F2ED] flex items-center justify-center mx-auto mb-3">
               <UtensilsCrossed className="w-8 h-8 text-[#A8A29E]" />
             </div>
@@ -171,8 +225,8 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {filteredRestaurants.map((restaurant) => (
-              <RestaurantCard key={restaurant.id} restaurant={restaurant} />
+            {(search || selectedCategory !== 'all' ? filteredRestaurants : rest).map((restaurant, i) => (
+              <RestaurantCard key={restaurant.id} restaurant={restaurant} index={i} />
             ))}
           </div>
         )}
@@ -185,73 +239,69 @@ export default function HomePage() {
 // RESTAURANT CARD
 // ============================================
 
-function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
+function RestaurantCard({ restaurant, index }: { restaurant: Restaurant; index: number }) {
   const { language } = useLanguage();
 
   return (
-    <Link href={`/restaurant/${restaurant.id}`} className="block group active:scale-[0.98] transition-transform">
-      <div className="bg-white rounded-2xl border border-[#E7E5E4] shadow-sm overflow-hidden">
-        {/* Cover image */}
-        <div className="relative h-44">
+    <Link href={`/restaurant/${restaurant.id}`} className="block group animate-ed-reveal"
+      style={{ animationDelay: `${0.08 + index * 0.06}s` }}
+    >
+      <div className="ed-card flex gap-4 p-3">
+        {/* Thumbnail */}
+        <div className="relative w-28 h-28 shrink-0 rounded-[14px] overflow-hidden">
           <img
-            src={restaurant.coverImage || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&q=80'}
+            src={restaurant.coverImage || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&q=80'}
             alt={restaurant.name}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-
-          {/* Best offer badge */}
-          <div className="absolute top-3 left-3 bg-[#D84315] text-white px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase tracking-wider shadow-md">
-            Meilleure offre
-          </div>
-
-          {/* Delivery time */}
-          <div className="absolute bottom-3 right-3 flex items-center gap-1 bg-black/60 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-bold text-white">
-            <Clock className="w-3 h-3" />
-            {restaurant.deliveryTime || 30} min
-          </div>
+          {!restaurant.isActive && (
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+              <span className="text-white text-[10px] font-bold uppercase tracking-wider">Fermé</span>
+            </div>
+          )}
         </div>
 
         {/* Info */}
-        <div className="p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-[17px] text-[#1C1917] truncate">{restaurant.name}</h3>
-              <p className="text-sm text-[#78716C] mt-0.5 line-clamp-1">
-                {restaurant.description || restaurant.address}
-              </p>
-            </div>
-
+        <div className="flex-1 min-w-0 py-0.5">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="font-bold text-[15px] text-[#1C1917] leading-snug">{restaurant.name}</h3>
             {restaurant.avgRating > 0 && (
-              <div className="flex items-center gap-1 bg-[#FEF3C7] px-2 py-1 rounded-lg flex-shrink-0">
-                <Star className="w-3.5 h-3.5 text-[#D97706] fill-[#D97706]" />
-                <span className="text-sm font-bold text-[#D97706]">
-                  {restaurant.avgRating.toFixed(1)}
-                </span>
+              <div className="flex items-center gap-1 bg-[#FEF3C7] px-2 py-0.5 rounded-lg shrink-0">
+                <Star className="w-3 h-3 fill-[#B45309] text-[#B45309]" />
+                <span className="text-xs font-bold text-[#B45309]">{restaurant.avgRating.toFixed(1)}</span>
               </div>
             )}
           </div>
 
-          {/* Tags */}
-          <div className="flex items-center gap-2 mt-3 flex-wrap">
+          <p className="text-xs text-[#78716C] mt-0.5 line-clamp-1">
+            {restaurant.description || restaurant.address}
+          </p>
+
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
             {restaurant.cuisineTypes?.slice(0, 2).map((type) => (
               <span
                 key={type}
-                className="text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-md bg-[#F5F2ED] text-[#78716C]"
+                className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md bg-[#F5F2ED] text-[#78716C]"
               >
                 {type}
               </span>
             ))}
-            <span className="text-xs text-[#A8A29E] font-medium">
+          </div>
+
+          <div className="flex items-center gap-3 mt-2.5">
+            <span className="flex items-center gap-1 text-[11px] font-bold text-[#78716C]">
+              <Clock className="w-3 h-3" /> {restaurant.deliveryTime || 30} min
+            </span>
+            <span className="text-[11px] text-[#A8A29E] font-medium">
               {formatPrice(restaurant.deliveryFee)} livraison
             </span>
             {restaurant.isActive ? (
-              <span className="text-[10px] font-bold text-[#166534] bg-[#DCFCE7] px-2 py-1 rounded-full">
-                {language === 'fr' ? 'Ouvert' : 'Open'}
+              <span className="text-[10px] font-bold text-[#15803D] bg-[#DCFCE7] px-2 py-0.5 rounded-full">
+                Ouvert
               </span>
             ) : (
-              <span className="text-[10px] font-bold text-[#DC2626] bg-[#FEE2E2] px-2 py-1 rounded-full">
-                {language === 'fr' ? 'Fermé' : 'Closed'}
+              <span className="text-[10px] font-bold text-[#DC2626] bg-[#FEE2E2] px-2 py-0.5 rounded-full">
+                Fermé
               </span>
             )}
           </div>
@@ -269,14 +319,14 @@ function RestaurantSkeleton() {
   return (
     <div className="space-y-4">
       {[1, 2, 3].map((i) => (
-        <div key={i} className="bg-white rounded-2xl border border-[#E7E5E4] shadow-sm overflow-hidden">
-          <div className="shimmer h-44 bg-[#F5F2ED]" />
-          <div className="p-4 space-y-3">
-            <div className="shimmer h-5 w-3/4 rounded bg-[#F5F2ED]" />
-            <div className="shimmer h-4 w-1/2 rounded bg-[#F5F2ED]" />
+        <div key={i} className="ed-card flex gap-4 p-3">
+          <div className="w-28 h-28 shrink-0 rounded-[14px] ed-shimmer" />
+          <div className="flex-1 py-1 space-y-3">
+            <div className="ed-shimmer h-4 w-3/4" />
+            <div className="ed-shimmer h-3 w-1/2" />
             <div className="flex gap-2 mt-2">
-              <div className="shimmer w-16 h-5 rounded-full bg-[#F5F2ED]" />
-              <div className="shimmer w-16 h-5 rounded-full bg-[#F5F2ED]" />
+              <div className="ed-shimmer w-14 h-5 rounded-full" />
+              <div className="ed-shimmer w-14 h-5 rounded-full" />
             </div>
           </div>
         </div>

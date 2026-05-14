@@ -12,9 +12,9 @@ interface NavItemDef {
 }
 
 const navItems: NavItemDef[] = [
-  { href: '/', icon: <Home className="w-5 h-5" />, label: 'Accueil', color: '#D84315', bg: '#FEF0EB' },
-  { href: '/restaurants', icon: <UtensilsCrossed className="w-5 h-5" />, label: 'Restos', color: '#166534', bg: '#DCFCE7' },
-  { href: '/cart', icon: <ShoppingCart className="w-5 h-5" />, label: 'Panier', color: '#D97706', bg: '#FEF3C7' },
+  { href: '/', icon: <Home className="w-5 h-5" />, label: 'Accueil', color: '#C2410C', bg: '#FEF0EB' },
+  { href: '/restaurants', icon: <UtensilsCrossed className="w-5 h-5" />, label: 'Restos', color: '#15803D', bg: '#DCFCE7' },
+  { href: '/cart', icon: <ShoppingCart className="w-5 h-5" />, label: 'Panier', color: '#B45309', bg: '#FEF3C7' },
   { href: '/orders', icon: <ClipboardList className="w-5 h-5" />, label: 'Commandes', color: '#2563EB', bg: '#DBEAFE' },
   { href: '/profile', icon: <User className="w-5 h-5" />, label: 'Profil', color: '#1C1917', bg: '#F5F2ED' },
 ];
@@ -23,8 +23,8 @@ export const NeonBottomNav: React.FC = () => {
   const router = useRouter();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[#E7E5E4] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] safe-area-bottom">
-      <div className="flex justify-around items-center h-[68px] px-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 ed-nav">
+      <div className="flex justify-around items-center h-[68px] px-2 max-w-md mx-auto">
         {navItems.map((item) => {
           const isActive = router.pathname === item.href;
           return (
