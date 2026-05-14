@@ -1,0 +1,11 @@
+node_modules
+.env
+.env.local
+.claude/worktrees/
+.superpowers/
+*.png
+apps/web/.next/
+apps/web/next-env.d.ts
+apps/web/tsconfig.tsbuildinfo
+packages/api/dist/
+packages/api/.env
