@@ -4,7 +4,6 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { RandomStorageService } from './random-storage.service';
 
 const OTP_LENGTH = 6;
 const OTP_EXPIRY_SECONDS = 5 * 60; // 5 minutes
@@ -21,55 +20,48 @@ export class OtpService {
 
   /**
    * Génère un OTP et le stocke temporairement
-   * @param phone - Numéro de téléphone
+   * @param identifier - Email ou téléphone
    * @returns Code OTP généré
    */
-  generateOtp(phone: string): string {
-    // Génère un code aléatoire de 6 chiffres
+  generateOtp(identifier: string): string {
     const otp = this.generateRandomCode();
 
-    // Stocke l'OTP avec métadonnées
-    this.storage.set(phone, {
+    this.storage.set(identifier, {
       code: otp,
       attempts: 0,
       createdAt: Date.now(),
       expiresAt: Date.now() + OTP_EXPIRY_SECONDS * 1000,
     });
 
-    this.logger.debug(`OTP generated for ${this.maskPhone(phone)}: ${otp}`);
+    this.logger.debug(`OTP generated for ${this.maskIdentifier(identifier)}: ${otp}`);
     return otp;
   }
 
   /**
    * Valide un OTP
-   * @param phone - Numéro de téléphone
+   * @param identifier - Email ou téléphone
    * @param code - Code à vérifier
-   * @returns true si valide, false sinon
    */
-  validateOtp(phone: string, code: string): { valid: boolean; error?: string } {
-    const stored = this.storage.get(phone);
+  validateOtp(identifier: string, code: string): { valid: boolean; error?: string } {
+    const stored = this.storage.get(identifier);
 
-    // Pas d'OTP trouvé
     if (!stored) {
       return { valid: false, error: 'Aucun code demandé. Veuillez demander un nouveau code.' };
     }
 
-    // OTP expiré
     if (Date.now() > stored.expiresAt) {
-      this.storage.delete(phone);
+      this.storage.delete(identifier);
       return { valid: false, error: 'Code expiré. Veuillez demander un nouveau code.' };
     }
 
-    // Trop de tentatives
     if (stored.attempts >= MAX_ATTEMPTS) {
-      this.storage.delete(phone);
+      this.storage.delete(identifier);
       return { valid: false, error: 'Trop de tentatives. Veuillez demander un nouveau code.' };
     }
 
-    // Code incorrect
     if (stored.code !== code) {
       stored.attempts += 1;
-      this.storage.set(phone, stored);
+      this.storage.set(identifier, stored);
       const remaining = MAX_ATTEMPTS - stored.attempts;
       if (remaining > 0) {
         return { valid: false, error: `Code incorrect. Il vous reste ${remaining} tentative(s).` };
@@ -77,14 +69,10 @@ export class OtpService {
       return { valid: false, error: 'Code incorrect. Veuillez demander un nouveau code.' };
     }
 
-    // Succès - supprime l'OTP
-    this.storage.delete(phone);
+    this.storage.delete(identifier);
     return { valid: true };
   }
 
-  /**
-   * Génère un code numérique aléatoire
-   */
   private generateRandomCode(): string {
     let code = '';
     for (let i = 0; i < OTP_LENGTH; i++) {
@@ -93,19 +81,16 @@ export class OtpService {
     return code;
   }
 
-  /**
-   * Masque un numéro de téléphone pour les logs
-   */
-  private maskPhone(phone: string): string {
-    if (phone.length < 4) return '****';
-    return phone.slice(0, 4) + '****' + phone.slice(-2);
+  private maskIdentifier(identifier: string): string {
+    if (identifier.includes('@')) {
+      const [local, domain] = identifier.split('@');
+      return local.slice(0, 2) + '***@' + domain;
+    }
+    if (identifier.length < 4) return '****';
+    return identifier.slice(0, 4) + '****' + identifier.slice(-2);
   }
 }
 
-/**
- * Stockage en mémoire pour les OTP
- * En production, utiliser Redis
- */
 interface OtpData {
   code: string;
   attempts: number;
@@ -118,7 +103,6 @@ class RandomStorageService {
 
   set(key: string, value: OtpData): void {
     this.store.set(key, value);
-    // Auto-cleanup après expiration
     setTimeout(() => {
       const stored = this.store.get(key);
       if (stored && Date.now() > stored.expiresAt) {

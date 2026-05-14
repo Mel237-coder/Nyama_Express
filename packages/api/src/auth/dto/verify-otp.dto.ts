@@ -1,4 +1,4 @@
-import { IsString, Length, Matches } from 'class-validator';
+import { IsString, Length, Matches, IsEmail } from 'class-validator';
 
 export class VerifyOtpDto {
   @IsString()
@@ -6,8 +6,8 @@ export class VerifyOtpDto {
   @Matches(/^\d{6}$/, { message: 'Le code OTP doit contenir uniquement des chiffres' })
   code: string;
 
-  @IsString()
-  phone: string;
+  @IsEmail({}, { message: 'Adresse e-mail invalide' })
+  email: string;
 }
 
 export class RefreshTokenDto {

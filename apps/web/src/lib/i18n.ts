@@ -25,6 +25,8 @@ export const translations = {
     menu: 'Menu',
     reviews: 'Avis',
     info: 'Informations',
+    address: 'Adresse',
+    description: 'Description',
     deliveryTime: 'Temps de livraison',
     minimumOrder: 'Commande minimum',
     deliveryFee: 'Frais de livraison',
@@ -62,6 +64,7 @@ export const translations = {
 
     // OTP Auth
     enterPhone: 'Votre numéro de téléphone',
+    enterEmail: 'Votre adresse e-mail',
     sendCode: 'Recevoir un code',
     enterCode: 'Entrez le code de vérification',
     verify: 'Vérifier',
@@ -118,6 +121,8 @@ export const translations = {
     menu: 'Menu',
     reviews: 'Reviews',
     info: 'Information',
+    address: 'Address',
+    description: 'Description',
     deliveryTime: 'Delivery time',
     minimumOrder: 'Minimum order',
     deliveryFee: 'Delivery fee',
@@ -155,6 +160,7 @@ export const translations = {
 
     // OTP Auth
     enterPhone: 'Your phone number',
+    enterEmail: 'Your email address',
     sendCode: 'Receive a code',
     enterCode: 'Enter verification code',
     verify: 'Verify',
@@ -205,7 +211,8 @@ export function t(key: TranslationKey, lang: Language = 'fr'): string {
 /**
  * Format price in FCFA
  */
-export function formatPrice(amount: number): string {
+export function formatPrice(amount: number | undefined | null): string {
+  if (amount == null) return '0 F';
   return `${amount.toLocaleString('fr-FR')} F`;
 }
 

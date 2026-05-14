@@ -29,17 +29,35 @@ export default function DelivererMissions() {
   };
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-extrabold text-[#1A1A1A] mb-4">Missions</h1>
-      <div className="flex gap-2 mb-4">
+    <div className="p-5">
+      <h1 className="text-2xl font-extrabold text-[#1A1A1A] mb-5 animate-fade-in-up">Missions</h1>
+
+      <div className="flex gap-2 mb-5 p-1 bg-white rounded-2xl shadow-sm animate-fade-in-up stagger-1">
         {(['available', 'active', 'history'] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)} className={`flex-1 py-2 rounded-xl text-sm font-bold ${tab === t ? 'bg-[#D84315] text-white' : 'bg-white text-[#666666] border border-[#E8E4DC]'}`}>
+          <button key={t} onClick={() => setTab(t)}
+            className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${tab === t ? 'bg-[#D84315] text-white shadow-md' : 'text-[#666666] hover:text-[#1A1A1A]'}`}
+          >
             {t === 'available' ? 'Disponibles' : t === 'active' ? 'Actives' : 'Historique'}
           </button>
         ))}
       </div>
-      {loading ? <p className="text-[#999999] text-center py-8">Chargement...</p> : missions.length === 0 ? <p className="text-[#999999] text-center py-8">Aucune mission</p> : (
-        <div className="space-y-3">{missions.map(mission => <MissionCard key={mission.id} mission={mission} showAccept={tab === 'available'} onAccept={() => acceptMission(mission.id)} />)}</div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="w-8 h-8 border-2 border-[#D84315] border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : missions.length === 0 ? (
+        <div className="text-center py-12 animate-fade-in">
+          <p className="text-[#999999]">Aucune mission</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {missions.map((mission, i) => (
+            <div key={mission.id} style={{ animationDelay: `${i * 0.1}s` }}>
+              <MissionCard mission={mission} showAccept={tab === 'available'} onAccept={() => acceptMission(mission.id)} />
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

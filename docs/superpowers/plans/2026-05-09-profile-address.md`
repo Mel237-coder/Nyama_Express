@@ -1,0 +1,130 @@
+# User Profile & Address Book Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Implement a user profile system with account settings, payment preferences, and a hybrid GPS-label address book.
+
+**Architecture:** The profile system consists of a main dashboard and a dedicated address management page. It integrates with the existing `useAuth` and `useLanguage` hooks and interacts with the backend via a new set of profile-related API endpoints.
+
+**Tech Stack:** Next.js 14, React, Tailwind CSS, Browser Geolocation API.
+
+---
+
+## File Structure
+
+- Create: `apps/web/src/pages/profile.tsx` - Main profile dashboard and settings.
+- Create: `apps/web/src/pages/profile/addresses.tsx` - Address book management list.
+- Create: `apps/web/src/components/profile/AddressForm.tsx` - Hybrid GPS/Manual address creation modal.
+- Create: `apps/web/src/components/profile/AddressCard.tsx` - Visual representation of a saved address.
+- Modify: `apps/web/src/pages/checkout.tsx` - Integration to allow selecting saved addresses.
+
+---
+
+### Task 1: Profile Dashboard & Auth Guard
+
+**Files:**
+- Create: `apps/web/src/pages/profile.tsx`
+
+- [ ] **Step 1: Implement the page shell and auth guard**
+  Use `useAuth` to ensure the user is logged in. If not, redirect to `/login`.
+
+- [ ] **Step 2: Implement the Identity Header**
+  Display the user's profile picture (fallback to initials), full name, and verified phone number.
+
+- [ ] **Step 3: Create the Settings Menu**
+  Implement a list of navigation items leading to:
+  - Account Details
+  - Payment Preferences
+  - App Preferences (Language/Notifications)
+  - Address Book (`/profile/addresses`)
+
+- [ ] **Step 4: Implement Logout functionality**
+  Call the auth logout method, clear tokens, and redirect to `/`.
+
+- [ ] **Step 5: Commit**
+  `git commit -m "feat(web): implement profile dashboard and auth guard"`
+
+---
+
+### Task 2: Account & Payment Preferences
+
+**Files:**
+- Modify: `apps/web/src/pages/profile.tsx`
+
+- [ ] **Step 1: Implement Account Details Form**
+  Create a section to edit name and email, wired to `api.updateUserProfile`.
+
+- [ ] **Step 2: Implement Payment Preferences**
+  Add a field to save the default MoMo/Orange Money phone number for faster checkout.
+
+- [ ] **Step 3: Implement Language Toggle**
+  Wire a toggle between 'fr' and 'en' using the `useLanguage` hook.
+
+- [ ] **Step 4: Commit**
+  `git commit -m "feat(web): add account and payment preferences to profile"`
+
+---
+
+### Task 3: Address Book List View
+
+**Files:**
+- Create: `apps/web/src/pages/profile/addresses.tsx`
+- Create: `apps/web/src/components/profile/AddressCard.tsx`
+
+- [ ] **Step 1: Implement Address List fetching**
+  Fetch saved addresses via `api.getUserAddresses`.
+
+- [ ] **Step 2: Implement `AddressCard` component**
+  Display the label (Home, Work, etc.), coordinates-derived address, and a "Default" badge.
+
+- [ ] **Step 3: Implement Delete functionality**
+  Add a delete button that calls `api.deleteAddress` and updates the local state.
+
+- [ ] **Step 4: Implement "Add New Address" trigger**
+  Add a prominent button to open the `AddressForm` modal.
+
+- [ ] **Step 5: Commit**
+  `git commit -m "feat(web): implement address book list view"`
+
+---
+
+### Task 4: Hybrid Address Creation Flow
+
+**Files:**
+- Create: `apps/web/src/components/profile/AddressForm.tsx`
+- Modify: `apps/web/src/pages/profile/addresses.tsx`
+
+- [ ] **Step 1: Implement GPS Capture**
+  Create a "Use My Current Location" button using `navigator.geolocation.getCurrentPosition`.
+
+- [ ] **Step 2: Implement Labeling and Refinement**
+  - Add a dropdown for labels: ["Home", "Work", "Other"].
+  - Add a text area for "Delivery Landmarks" (e.g., "Opposite the pharmacy").
+
+- [ ] **Step 3: Handle GPS Fallback**
+  If GPS is denied, allow manual input of coordinates or a simple address string.
+
+- [ ] **Step 4: Implement Saving Logic**
+  Call `api.saveAddress` with labels, coordinates, and landmarks.
+
+- [ ] **Step 5: Commit**
+  `git commit -m "feat(web): implement hybrid GPS address creation flow"`
+
+---
+
+### Task 5: Checkout Integration
+
+**Files:**
+- Modify: `apps/web/src/pages/checkout.tsx`
+
+- [ ] **Step 1: Fetch Saved Addresses**
+  Upon entering the checkout page, fetch the user's saved addresses.
+
+- [ ] **Step 2: Implement "Saved Address" Selector**
+  Add a section at the top of the address selection area allowing the user to pick a saved address (e.g., "Deliver to Home").
+
+- [ ] **Step 3: Sync Selected Address**
+  When a saved address is picked, automatically update the `checkoutAddress` state and the map view.
+
+- [ ] **Step 4: Commit**
+  `git commit -m "feat(web): integrate saved addresses into checkout flow"`

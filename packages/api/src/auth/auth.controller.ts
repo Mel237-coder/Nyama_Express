@@ -5,7 +5,8 @@
 import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { RequestOtpDto, VerifyOtpDto } from './dto/request-otp.dto';
+import { RequestOtpDto } from './dto/request-otp.dto';
+import { VerifyOtpDto } from './dto/verify-otp.dto';
 
 @ApiTags('Authentification')
 @Controller('auth')
@@ -15,7 +16,7 @@ export class AuthController {
   @Post('request-otp')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Demander un code OTP' })
-  @ApiResponse({ status: 200, description: 'Code OTP envoyé par SMS' })
+  @ApiResponse({ status: 200, description: 'Code OTP envoyé par e-mail' })
   @ApiResponse({ status: 400, description: 'Numéro invalide' })
   @ApiResponse({ status: 429, description: 'Trop de requêtes' })
   async requestOtp(@Body() dto: RequestOtpDto) {

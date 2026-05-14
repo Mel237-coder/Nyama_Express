@@ -6,7 +6,7 @@
 
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 interface NotchPayPayment {
   id?: string;
@@ -259,7 +259,7 @@ export class NotchpayService {
       await this.prisma.order.update({
         where: { id: payment.orderId },
         data: {
-          paymentStatus: success ? 'PAID' : 'FAILED',
+          paymentStatus: success ? 'SUCCESS' : 'FAILED',
         },
       });
     }
@@ -295,14 +295,19 @@ export class NotchpayService {
     const { paymentId, amount, reason } = params;
 
     if (!this.publicKey || paymentId.startsWith('notchpay_sim_')) {
-      await this.prisma.payment.update({
+      const payment = await this.prisma.payment.findFirst({
         where: { internalPaymentId: paymentId },
-        data: {
-          status: 'REFUNDED',
-          refundReason: reason,
-          refundedAt: new Date(),
-        },
       });
+      if (payment) {
+        await this.prisma.payment.update({
+          where: { id: payment.id },
+          data: {
+            status: 'REFUNDED',
+            refundReason: reason,
+            refundedAt: new Date(),
+          },
+        });
+      }
       return { success: true };
     }
 
@@ -324,14 +329,19 @@ export class NotchpayService {
         return { success: false, error: error.message };
       }
 
-      await this.prisma.payment.update({
+      const payment = await this.prisma.payment.findFirst({
         where: { internalPaymentId: paymentId },
-        data: {
-          status: 'REFUNDED',
-          refundReason: reason,
-          refundedAt: new Date(),
-        },
       });
+      if (payment) {
+        await this.prisma.payment.update({
+          where: { id: payment.id },
+          data: {
+            status: 'REFUNDED',
+            refundReason: reason,
+            refundedAt: new Date(),
+          },
+        });
+      }
 
       return { success: true };
     } catch (error) {

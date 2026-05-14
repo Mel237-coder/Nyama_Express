@@ -11,9 +11,11 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { RolesGuard } from './guards/roles.guard';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { AfricaTalkingService } from '../common/sms/africa-talking.service';
 import { OtpService } from '../common/sms/otp.service';
+import { EmailService } from '../common/email/email.service';
 
 @Module({
   imports: [
@@ -34,10 +36,12 @@ import { OtpService } from '../common/sms/otp.service';
     AuthService,
     JwtStrategy,
     RolesGuard,
+    JwtAuthGuard,
     PrismaService,
     AfricaTalkingService,
     OtpService,
+    EmailService,
   ],
-  exports: [AuthService, JwtStrategy, RolesGuard],
+  exports: [AuthService, JwtStrategy, RolesGuard, JwtAuthGuard],
 })
 export class AuthModule {}

@@ -33,6 +33,12 @@ async function bootstrap() {
   // Prefix API
   app.setGlobalPrefix('api');
 
+  // Root health check (outside /api prefix)
+  const expressApp: any = app.getHttpAdapter().getInstance();
+  expressApp.get('/', (req: any, res: any) => {
+    res.json({ status: 'ok', service: 'FoodApp API', timestamp: new Date().toISOString() });
+  });
+
   await app.listen(port);
   console.log(`🎯 FoodApp API running on http://localhost:${port}`);
 }

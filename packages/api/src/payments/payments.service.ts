@@ -77,15 +77,21 @@ export class PaymentsService {
     }
 
     // Numéro de téléphone pour Mobile Money
-    const payerPhone = phone || order.client.phone;
+    const payerPhone = (phone || order.client.phone) ?? undefined;
 
     // Route vers le provider approprié
     switch (paymentMethod) {
       case 'MTN_MOMO':
+        if (!payerPhone) {
+          return { success: false, error: 'Numéro de téléphone requis pour MTN MoMo' };
+        }
         return this.initiateMtnPayment(orderId, amount, payerPhone);
 
       case 'ORANGE_MONEY':
         // Orange Money - même logique que MTN pour l'instant
+        if (!payerPhone) {
+          return { success: false, error: 'Numéro de téléphone requis pour Orange Money' };
+        }
         return this.initiateMtnPayment(orderId, amount, payerPhone);
 
       case 'NOTCHPAY':
@@ -269,7 +275,7 @@ export class PaymentsService {
       throw new NotFoundException('Commande non trouvée');
     }
 
-    if (order.paymentStatus !== 'PAID') {
+    if (order.paymentStatus !== 'SUCCESS') {
       throw new BadRequestException('Cette commande n\'a pas été payée');
     }
 
@@ -320,10 +326,12 @@ export class PaymentsService {
       });
 
       // Envoyer SMS de confirmation
-      await this.sms.sendSms({
-        to: order.client.phone,
-        message: `FoodApp: Votre remboursement de ${payment.amount} FCFA est en cours de traitement. Merci de votre patience.`,
-      });
+      if (order.client.phone) {
+        await this.sms.sendSms({
+          to: order.client.phone,
+          message: `FoodApp: Votre remboursement de ${payment.amount} FCFA est en cours de traitement. Merci de votre patience.`,
+        });
+      }
     }
 
     return result;

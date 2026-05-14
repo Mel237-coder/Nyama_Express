@@ -74,84 +74,80 @@ export default function AddressSelector({ onAddressConfirm }: AddressSelectorPro
         <button
           onClick={getCurrentLocation}
           disabled={isLocating}
-          className="w-full max-w-md py-3 px-6 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-md active:scale-95"
+          className="w-full max-w-md py-3 px-6 neon-btn disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {isLocating ? (
-            <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
+            <span className="inline-block w-5 h-5 border-2 border-[#0A0A0F]/30 border-t-[#0A0A0F] rounded-full animate-spin" />
           ) : (
             <Navigation className="w-5 h-5" />
           )}
-          {isLocating ? 'Locating...' : 'Use Current Location'}
+          {isLocating ? 'Localisation...' : 'Utiliser ma position'}
         </button>
 
         {error && (
-          <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 p-3 rounded-lg w-full max-w-md">
-            <AlertCircle className="w-4 h-4" />
+          <div className="flex items-center gap-2 text-[#FF3366] text-sm glass p-3 rounded-lg w-full max-w-md border border-[#FF3366]/20">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {coords && (
-          <div className="flex items-center gap-2 text-green-600 text-sm bg-green-50 p-3 rounded-lg w-full max-w-md animate-in fade-in slide-in-from-top-1">
-            <CheckCircle2 className="w-4 h-4" />
-            <span>Location detected successfully!</span>
+          <div className="flex items-center gap-2 text-[#00FF88] text-sm glass p-3 rounded-lg w-full max-w-md border border-[#00FF88]/20">
+            <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+            <span>Position détectée !</span>
           </div>
         )}
       </div>
 
       <div className="space-y-4">
-        {/* Map Placeholder / Visual Indicator */}
-        <div className="relative w-full h-48 bg-gray-100 rounded-2xl border-2 border-dashed border-gray-200 overflow-hidden flex items-center justify-center">
+        {/* Map Placeholder */}
+        <div className="relative w-full h-48 glass rounded-2xl border border-dashed border-white/10 overflow-hidden flex items-center justify-center">
           {coords ? (
-            <div className="absolute inset-0 bg-slate-200">
-              {/*
-                In a real implementation, this would be a Leaflet map
-                centered on [coords.lat, coords.lng]
-              */}
-              <div className="w-full h-full flex items-center justify-center text-gray-400 flex-col gap-2">
-                <MapPin className="w-8 h-8 text-orange-500 animate-bounce" />
+            <div className="absolute inset-0 bg-[#0A0A0F]">
+              <div className="w-full h-full flex items-center justify-center text-white/30 flex-col gap-2">
+                <MapPin className="w-8 h-8 text-[#FFD600] animate-bounce" />
                 <span className="text-xs font-mono">{coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}</span>
               </div>
             </div>
           ) : (
-            <div className="text-gray-400 flex flex-col items-center gap-2">
+            <div className="text-white/30 flex flex-col items-center gap-2">
               <MapPin className="w-8 h-8" />
-              <p className="text-sm">No location selected</p>
+              <p className="text-sm">Aucune position sélectionnée</p>
             </div>
           )}
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">
-            Additional delivery instructions
+          <label className="text-sm font-medium text-white/70">
+            Instructions de livraison
           </label>
           <textarea
             value={addressText}
             onChange={(e) => setAddressText(e.target.value)}
-            placeholder="e.g. Gate 4, blue house, next to the pharmacy"
-            className="w-full p-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all outline-none resize-none"
+            placeholder="ex: Portail bleu, à côté de la pharmacie"
+            className="neon-input resize-none"
             rows={3}
           />
         </div>
 
-        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer group">
+        <div className="flex items-center gap-3 p-3 glass rounded-xl cursor-pointer group">
           <input
             type="checkbox"
             id="save-address"
             checked={saveAddress}
             onChange={(e) => setSaveAddress(e.target.checked)}
-            className="w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500 cursor-pointer"
+            className="w-5 h-5 rounded border-white/20 bg-transparent text-[#FFD600] focus:ring-[#FFD600] cursor-pointer accent-[#FFD600]"
           />
-          <label htmlFor="save-address" className="text-sm text-gray-600 cursor-pointer group-hover:text-gray-900 transition-colors">
-            Save this address for future orders
+          <label htmlFor="save-address" className="text-sm text-white/60 cursor-pointer group-hover:text-white/80 transition-colors">
+            Enregistrer cette adresse pour mes futures commandes
           </label>
         </div>
 
         <button
           onClick={handleConfirm}
-          className="w-full py-3 px-6 bg-gray-900 hover:bg-black text-white rounded-xl font-semibold transition-all active:scale-95 shadow-sm"
+          className="w-full py-3 px-6 ghost-btn font-semibold"
         >
-          Confirm Delivery Location
+          Confirmer l&apos;adresse de livraison
         </button>
       </div>
     </div>

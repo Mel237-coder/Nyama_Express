@@ -1,0 +1,132 @@
+# Order Tracking Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Implement a real-time order tracking page with a live-updating map, status-driven UI stages, and driver communication.
+
+**Architecture:** The page uses a dynamic route `/orders/[id]`. It combines a REST API for initial state and a Socket.io connection for real-time GPS and status updates. Leaflet.js handles the map rendering with custom markers.
+
+**Tech Stack:** Next.js 14, React, Leaflet.js, Socket.io-client, Tailwind CSS.
+
+---
+
+## File Structure
+
+- Create: `apps/web/src/pages/orders/[id].tsx` - Main tracking page and orchestration logic.
+- Create: `apps/web/src/components/tracking/TrackingMap.tsx` - Leaflet map implementation with dynamic markers.
+- Create: `apps/web/src/components/tracking/StatusHeader.tsx` - Dynamic header that shifts styles based on order status.
+- Create: `apps/web/src/components/tracking/DriverCard.tsx` - Interaction panel for calling/messaging the driver.
+- Create: `apps/web/src/components/tracking/ArrivedOverlay.tsx` - Full-screen confirmation when the driver arrives.
+
+---
+
+### Task 1: Tracking Page Shell & Auth Guard
+
+**Files:**
+- Create: `apps/web/src/pages/orders/[id].tsx`
+
+- [ ] **Step 1: Implement the page shell and auth guard**
+  Verify `User.id === Order.userId` using `useAuth` and `api.getOrder`. If not authorized, redirect to home.
+
+- [ ] **Step 2: Implement initial data fetching**
+  Fetch order details and current tracking status from `/api/orders/[id]`.
+
+- [ ] **Step 3: Setup base layout**
+  Create a `min-h-screen bg-gray-50 pb-24` wrapper.
+
+- [ ] **Step 4: Commit**
+  `git commit -m "feat(web): add order tracking page shell and auth guard"`
+
+---
+
+### Task 2: Live Map Integration
+
+**Files:**
+- Create: `apps/web/src/components/tracking/TrackingMap.tsx`
+- Modify: `apps/web/src/pages/orders/[id].tsx`
+
+- [ ] **Step 1: Implement Leaflet Map base**
+  Setup map centered on the delivery address with a clean, minimal tile provider.
+
+- [ ] **Step 2: Implement Static Markers**
+  Add markers for the Restaurant (source) and User (destination).
+
+- [ ] **Step 3: Implement Driver Marker & Animation**
+  Create a custom motorbike icon marker. Use a simple linear interpolation or smooth transition when updating coordinates to avoid "jumping".
+
+- [ ] **Step 4: Integrate into the page**
+  Pass current coordinates and status to the map component.
+
+- [ ] **Step 5: Commit**
+  `git commit -m "feat(web): implement live tracking map with dynamic markers"`
+
+---
+
+### Task 3: Socket.io Real-Time Stream
+
+**Files:**
+- Modify: `apps/web/src/pages/orders/[id].tsx`
+
+- [ ] **Step 1: Establish Socket.io connection**
+  Connect to the websocket gateway and join the room `order:${orderId}`.
+
+- [ ] **Step 2: Implement `delivery:location_update` handler**
+  Update the map marker coordinates in real-time as events arrive from the server.
+
+- [ ] **Step 3: Implement `order:status_changed` handler**
+  Update the internal `status` state to trigger UI transitions (Preparing $\rightarrow$ Delivery $\rightarrow$ Arrived).
+
+- [ ] **Step 4: Implement Polling Fallback**
+  Add a `setInterval` that checks `/api/deliveries/tracking/[id]` every 30s if the socket connection is lost.
+
+- [ ] **Step 5: Commit**
+  `git commit -m "feat(web): integrate real-time socket updates for location and status"`
+
+---
+
+### Task 4: Status-Driven UI & Driver Interaction
+
+**Files:**
+- Create: `apps/web/src/components/tracking/StatusHeader.tsx`
+- Create: `apps/web/src/components/tracking/DriverCard.tsx`
+- Modify: `apps/web/src/pages/orders/[id].tsx`
+
+- [ ] **Step 1: Implement `StatusHeader`**
+  Change background color and text based on status:
+  - `PREPARING`: Orange, "Your meal is being prepared 🍳"
+  - `OUT_FOR_DELIVERY`: Green, "Driver is on the way! 🛵"
+  - `DELIVERED`: Blue, "Order delivered!"
+
+- [ ] **Step 2: Implement `DriverCard`**
+  Create a bottom-sheet that appears only when status is `OUT_FOR_DELIVERY`.
+  - Display Driver name/photo.
+  - "Call" button $\rightarrow$ `tel:phone`.
+  - "Message" button $\rightarrow$ Trigger a simple chat modal (or alert as placeholder).
+
+- [ ] **Step 3: Integrate components into the page**
+  Wire them to the `status` state.
+
+- [ ] **Step 4: Commit**
+  `git commit -m "feat(web): implement status-driven UI and driver interaction card"`
+
+---
+
+### Task 5: Arrival & Finalization
+
+**Files:**
+- Create: `apps/web/src/components/tracking/ArrivedOverlay.tsx`
+- Modify: `apps/web/src/pages/orders/[id].tsx`
+
+- [ ] **Step 1: Implement `ArrivedOverlay`**
+  Create a full-screen overlay that triggers when status becomes `ARRIVED`.
+  - "Your food has arrived! 🛵"
+  - "Confirm Receipt" button.
+
+- [ ] **Step 2: Implement "Confirm Receipt" action**
+  Call `api.confirmDelivery(orderId)` and redirect the user to the order history or home page.
+
+- [ ] **Step 3: Final polishing**
+  Add smooth transitions between the different stages using Tailwind's `animate-in` and `fade-in`.
+
+- [ ] **Step 4: Commit**
+  `git commit -m "feat(web): implement arrival overlay and delivery confirmation"`

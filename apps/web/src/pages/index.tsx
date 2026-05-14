@@ -1,13 +1,27 @@
 // ============================================
-// Page d'accueil - Liste des restaurants
-// Mobile-first design
+// Page d'accueil — Design inspiré Uber Eats + Glassmorphism Néon
+// Mobile-first, header hero vert, catégories circulaires, cartes enrichies
 // ============================================
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useLanguage } from '../hooks/useLanguage';
 import { useCart } from '../hooks/useCart';
 import { api } from '../lib/api';
 import { formatPrice } from '../lib/i18n';
+import {
+  Search,
+  UtensilsCrossed,
+  Soup,
+  Beef,
+  Flame,
+  Salad,
+  Pizza,
+  Star,
+  Clock,
+  TrendingUp,
+  Heart,
+} from 'lucide-react';
 
 interface Restaurant {
   id: string;
@@ -19,24 +33,26 @@ interface Restaurant {
   cuisineTypes: string[];
   avgRating: number;
   deliveryFee: number;
+  deliveryTime?: number;
   isActive: boolean;
 }
 
 interface Category {
   id: string;
   name: string;
-  nameEn: string | null;
-  icon: string;
+  nameEn: string;
+  icon: React.ReactNode;
+  color: string;
 }
 
 const CUISINE_CATEGORIES: Category[] = [
-  { id: 'all', name: 'Tous', nameEn: 'All', icon: '🍽️' },
-  { id: 'african', name: 'Africaine', nameEn: 'African', icon: '🍲' },
-  { id: 'fast-food', name: 'Fast-Food', nameEn: 'Fast Food', icon: '🍔' },
-  { id: 'grill', name: 'Grillades', nameEn: 'Grill', icon: '🥩' },
-  { id: 'asian', name: 'Asiatique', nameEn: 'Asian', icon: '🍜' },
-  { id: 'indian', name: 'Indienne', nameEn: 'Indian', icon: '🍛' },
-  { id: 'pizza', name: 'Pizza', nameEn: 'Pizza', icon: '🍕' },
+  { id: 'all', name: 'Tous', nameEn: 'All', icon: <UtensilsCrossed className="w-5 h-5" />, color: '#FFD600' },
+  { id: 'africaine', name: 'Africaine', nameEn: 'African', icon: <Soup className="w-5 h-5" />, color: '#00FF88' },
+  { id: 'fast-food', name: 'Fast-Food', nameEn: 'Fast Food', icon: <Beef className="w-5 h-5" />, color: '#00D4FF' },
+  { id: 'grillades', name: 'Grillades', nameEn: 'Grill', icon: <Flame className="w-5 h-5" />, color: '#FF3366' },
+  { id: 'asiatique', name: 'Asiatique', nameEn: 'Asian', icon: <Soup className="w-5 h-5" />, color: '#00D4FF' },
+  { id: 'indienne', name: 'Indienne', nameEn: 'Indian', icon: <Salad className="w-5 h-5" />, color: '#FFD600' },
+  { id: 'pizza', name: 'Pizza', nameEn: 'Pizza', icon: <Pizza className="w-5 h-5" />, color: '#FF3366' },
 ];
 
 export default function HomePage() {
@@ -56,10 +72,9 @@ export default function HomePage() {
     try {
       setLoading(true);
       const data = await api.getRestaurants() as any;
-      setRestaurants(data.data || []);
+      setRestaurants(data.data || data || []);
     } catch (error) {
       console.error('Failed to load restaurants:', error);
-      // Mock data for development
       setRestaurants(MOCK_RESTAURANTS);
     } finally {
       setLoading(false);
@@ -72,62 +87,97 @@ export default function HomePage() {
       r.description?.toLowerCase().includes(search.toLowerCase());
     const matchesCategory =
       selectedCategory === 'all' ||
-      r.cuisineTypes.includes(selectedCategory);
+      r.cuisineTypes?.some((c) => c.toLowerCase().includes(selectedCategory.toLowerCase()));
     return matchesSearch && matchesCategory;
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Header */}
-      <header className="bg-orange-500 text-white p-4 sticky top-0 z-30">
-        <h1 className="text-xl font-bold mb-3">FoodApp Cameroun</h1>
+    <div className="min-h-screen pb-24 bg-[#0A0A0F]">
+      {/* ===== HERO HEADER ===== */}
+      <header className="relative bg-[#00FF88] px-4 pt-6 pb-8 rounded-b-[2rem] shadow-[0_4px_40px_rgba(0,255,136,0.25)]">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-2xl font-extrabold text-[#0A0A0F] tracking-tight">
+            FoodApp
+          </h1>
+          <span className="text-xs font-bold text-[#0A0A0F]/70 bg-[#0A0A0F]/10 px-2 py-1 rounded-full">
+            Cameroun
+          </span>
+        </div>
 
-        {/* Search bar */}
+        {/* Recherche proéminente style Uber Eats */}
         <div className="relative">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2">
+            <Search className="w-5 h-5 text-[#0A0A0F]/40" />
+          </div>
           <input
             type="text"
             placeholder={t('searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 rounded-lg text-gray-900 placeholder-gray-500"
+            className="w-full bg-white text-[#0A0A0F] placeholder-[#0A0A0F]/40 rounded-full py-3.5 pl-12 pr-4 font-medium shadow-lg focus:outline-none focus:ring-2 focus:ring-[#0A0A0F]/20"
           />
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-            🔍
-          </span>
         </div>
       </header>
 
-      {/* Categories */}
-      <div className="overflow-x-auto px-4 py-3">
-        <div className="flex gap-2">
+      {/* ===== CATÉGORIES CIRCULAIRES ===== */}
+      <div className="mt-5 px-4">
+        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
           {CUISINE_CATEGORIES.map((cat) => (
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`flex items-center gap-1 px-3 py-2 rounded-full whitespace-nowrap text-sm ${
-                selectedCategory === cat.id
-                  ? 'bg-orange-500 text-white'
-                  : 'bg-white text-gray-700 border border-gray-200'
-              }`}
+              className="flex flex-col items-center gap-2 flex-shrink-0 min-w-[72px]"
             >
-              <span>{cat.icon}</span>
-              <span>{language === 'fr' ? cat.name : cat.nameEn}</span>
+              <div
+                className={`w-16 h-16 rounded-full flex items-center justify-center transition-all shadow-lg ${
+                  selectedCategory === cat.id
+                    ? 'ring-2 ring-offset-2 ring-offset-[#0A0A0F] opacity-100'
+                    : 'opacity-70 hover:opacity-100'
+                }`}
+                style={{
+                  backgroundColor: `${cat.color}20`,
+                  '--tw-ring-color': cat.color,
+                  color: cat.color,
+                } as React.CSSProperties}
+              >
+                {cat.icon}
+              </div>
+              <span className="text-xs font-semibold text-white/90">
+                {language === 'fr' ? cat.name : cat.nameEn}
+              </span>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Restaurant list */}
-      <div className="px-4">
+      {/* ===== FILTRES RAPIDES ===== */}
+      <div className="mt-4 px-4 flex gap-2 overflow-x-auto pb-1">
+        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FFD600]/10 text-[#FFD600] text-xs font-bold border border-[#FFD600]/20">
+          <TrendingUp className="w-3.5 h-3.5" /> Les mieux notés
+        </button>
+        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 text-white/60 text-xs font-bold border border-white/10">
+          <Heart className="w-3.5 h-3.5" /> Favoris
+        </button>
+        <button className="px-3 py-1.5 rounded-full bg-white/5 text-white/60 text-xs font-bold border border-white/10">
+          Réinitialiser
+        </button>
+      </div>
+
+      {/* ===== RÉSULTATS ===== */}
+      <div className="mt-6 px-4">
+        <p className="text-sm font-semibold text-white/50 mb-4">
+          {filteredRestaurants.length} résultat{filteredRestaurants.length > 1 ? 's' : ''}
+        </p>
+
         {loading ? (
           <RestaurantSkeleton />
         ) : filteredRestaurants.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <p className="text-4xl mb-2">🍽️</p>
-            <p>{t('noResults')}</p>
+          <div className="text-center py-16 text-white/50">
+            <UtensilsCrossed className="w-12 h-12 mx-auto mb-3" style={{ color: '#FFD600' }} />
+            <p className="font-medium">{t('noResults')}</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-5">
             {filteredRestaurants.map((restaurant) => (
               <RestaurantCard key={restaurant.id} restaurant={restaurant} />
             ))}
@@ -139,101 +189,102 @@ export default function HomePage() {
 }
 
 // ============================================
-// Composant carte restaurant
+// CARTE RESTAURANT — Style Uber Eats enrichi
 // ============================================
 
 function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
   const { language } = useLanguage();
 
   return (
-    <a href={`/restaurant/${restaurant.id}`} className="card block">
-      {/* Cover image */}
-      <div className="relative h-40 bg-gray-200">
-        {restaurant.coverImage ? (
+    <Link href={`/restaurant/${restaurant.id}`} className="block group">
+      <div className="relative overflow-hidden rounded-2xl bg-white/5 border border-white/8 transition-transform active:scale-[0.98]">
+        {/* Photo couverture */}
+        <div className="relative h-44">
           <img
-            src={restaurant.coverImage}
+            src={restaurant.coverImage || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&q=80'}
             alt={restaurant.name}
             className="w-full h-full object-cover"
           />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-6xl bg-gradient-to-br from-orange-100 to-orange-200">
-            🍽️
-          </div>
-        )}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0F] via-transparent to-transparent" />
 
-        {/* Logo badge */}
-        {restaurant.logo && (
-          <div className="absolute bottom-0 left-4 -mb-6 w-16 h-16 rounded-full border-4 border-white bg-white shadow-md overflow-hidden">
-            <img
-              src={restaurant.logo}
-              alt={restaurant.name}
-              className="w-full h-full object-cover"
-            />
+          {/* Badge "Meilleure offre" */}
+          <div className="absolute top-3 left-3 bg-[#00FF88] text-[#0A0A0F] px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wider shadow-lg">
+            Meilleure offre
           </div>
-        )}
 
-        {/* Delivery fee badge */}
-        <div className="absolute top-3 right-3 bg-white px-2 py-1 rounded-full text-xs font-medium text-gray-700 shadow">
-          🚀 {formatPrice(restaurant.deliveryFee)}
+          {/* Temps de livraison */}
+          <div className="absolute bottom-3 right-3 flex items-center gap-1 bg-black/60 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-bold text-white">
+            <Clock className="w-3 h-3" />
+            {restaurant.deliveryTime || 30} min
+          </div>
         </div>
-      </div>
 
-      {/* Info */}
-      <div className="p-4 pt-8">
-        <div className="flex justify-between items-start">
-          <div>
-            <h3 className="font-bold text-lg text-gray-900">{restaurant.name}</h3>
-            <p className="text-sm text-gray-500 mt-1 line-clamp-1">
-              {restaurant.description || restaurant.address}
-            </p>
-          </div>
-
-          {/* Rating */}
-          {restaurant.avgRating > 0 && (
-            <div className="flex items-center gap-1 bg-orange-50 px-2 py-1 rounded">
-              <span className="text-orange-500">⭐</span>
-              <span className="font-medium text-sm">{restaurant.avgRating.toFixed(1)}</span>
+        {/* Infos */}
+        <div className="p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-bold text-lg text-white truncate">{restaurant.name}</h3>
+              <p className="text-sm text-white/50 mt-0.5 line-clamp-1">
+                {restaurant.description || restaurant.address}
+              </p>
             </div>
-          )}
-        </div>
 
-        {/* Cuisine tags */}
-        <div className="flex flex-wrap gap-2 mt-3">
-          {restaurant.cuisineTypes.slice(0, 3).map((type) => (
-            <span key={type} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-              {type}
+            {/* Note */}
+            {restaurant.avgRating > 0 && (
+              <div className="flex items-center gap-1 bg-[#FFD600]/10 border border-[#FFD600]/20 px-2 py-1 rounded-lg flex-shrink-0">
+                <Star className="w-3.5 h-3.5" style={{ color: '#FFD600', fill: '#FFD600' }} />
+                <span className="text-sm font-bold text-[#FFD600]">
+                  {restaurant.avgRating.toFixed(1)}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Tags cuisine + frais */}
+          <div className="flex items-center gap-2 mt-3 flex-wrap">
+            {restaurant.cuisineTypes?.slice(0, 2).map((type) => (
+              <span
+                key={type}
+                className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded bg-white/10 text-white/70"
+              >
+                {type}
+              </span>
+            ))}
+            <span className="text-xs text-white/40 font-medium">
+              {formatPrice(restaurant.deliveryFee)} livraison
             </span>
-          ))}
-        </div>
-
-        {/* Status */}
-        <div className="mt-3 flex items-center gap-2">
-          <span className={`w-2 h-2 rounded-full ${restaurant.isActive ? 'bg-green-500' : 'bg-red-500'}`} />
-          <span className="text-sm text-gray-500">
-            {restaurant.isActive ? (language === 'fr' ? 'Ouvert' : 'Open') : (language === 'fr' ? 'Fermé' : 'Closed')}
-          </span>
+            {restaurant.isActive ? (
+              <span className="text-[10px] font-bold text-[#00FF88] bg-[#00FF88]/10 px-2 py-0.5 rounded-full">
+                {language === 'fr' ? 'Ouvert' : 'Open'}
+              </span>
+            ) : (
+              <span className="text-[10px] font-bold text-[#FF3366] bg-[#FF3366]/10 px-2 py-0.5 rounded-full">
+                {language === 'fr' ? 'Fermé' : 'Closed'}
+              </span>
+            )}
+          </div>
         </div>
       </div>
-    </a>
+    </Link>
   );
 }
 
 // ============================================
-// Skeleton loading
+// SKELETON LOADING
 // ============================================
 
 function RestaurantSkeleton() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {[1, 2, 3].map((i) => (
-        <div key={i} className="card">
-          <div className="skeleton-image h-40" />
-          <div className="p-4">
-            <div className="skeleton-text w-3/4" />
-            <div className="skeleton-text w-1/2" />
-            <div className="flex gap-2 mt-3">
-              <div className="skeleton w-16 h-6 rounded" />
-              <div className="skeleton w-16 h-6 rounded" />
+        <div key={i} className="overflow-hidden rounded-2xl bg-white/5 border border-white/8">
+          <div className="shimmer h-44" />
+          <div className="p-4 space-y-3">
+            <div className="shimmer h-5 w-3/4 rounded" />
+            <div className="shimmer h-4 w-1/2 rounded" />
+            <div className="flex gap-2 mt-2">
+              <div className="shimmer w-16 h-5 rounded-full" />
+              <div className="shimmer w-16 h-5 rounded-full" />
             </div>
           </div>
         </div>
@@ -243,7 +294,7 @@ function RestaurantSkeleton() {
 }
 
 // ============================================
-// Mock data for development
+// MOCK DATA
 // ============================================
 
 const MOCK_RESTAURANTS: Restaurant[] = [
@@ -253,10 +304,11 @@ const MOCK_RESTAURANTS: Restaurant[] = [
     description: 'Cuisine française et africaine dans un cadre élégant',
     address: 'Bastos, Yaoundé',
     logo: null,
-    coverImage: null,
-    cuisineTypes: ['française', 'africaine', 'gastronomique'],
+    coverImage: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&q=80',
+    cuisineTypes: ['française', 'africaine'],
     avgRating: 4.5,
     deliveryFee: 500,
+    deliveryTime: 25,
     isActive: true,
   },
   {
@@ -265,10 +317,11 @@ const MOCK_RESTAURANTS: Restaurant[] = [
     description: 'Les meilleures pizzas de Douala, cuites au feu de bois',
     address: 'Akwa, Douala',
     logo: null,
-    coverImage: null,
-    cuisineTypes: ['pizza', 'italienne', 'fast-food'],
+    coverImage: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=600&q=80',
+    cuisineTypes: ['pizza', 'italienne'],
     avgRating: 4.2,
     deliveryFee: 500,
+    deliveryTime: 35,
     isActive: true,
   },
   {
@@ -277,10 +330,11 @@ const MOCK_RESTAURANTS: Restaurant[] = [
     description: 'Plats traditionnels camerounais comme à la maison',
     address: 'Bonamoussadi, Douala',
     logo: null,
-    coverImage: null,
-    cuisineTypes: ['africaine', 'camerounaise', 'traditionnelle'],
+    coverImage: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=600&q=80',
+    cuisineTypes: ['africaine', 'camerounaise'],
     avgRating: 4.8,
     deliveryFee: 500,
+    deliveryTime: 20,
     isActive: true,
   },
   {
@@ -289,10 +343,11 @@ const MOCK_RESTAURANTS: Restaurant[] = [
     description: 'Poulet frit à la américaine',
     address: 'Mvan, Yaoundé',
     logo: null,
-    coverImage: null,
+    coverImage: 'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=600&q=80',
     cuisineTypes: ['fast-food', 'américaine'],
     avgRating: 4.0,
     deliveryFee: 500,
+    deliveryTime: 30,
     isActive: false,
   },
 ];

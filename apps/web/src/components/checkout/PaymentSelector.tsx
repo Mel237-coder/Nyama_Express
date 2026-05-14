@@ -1,4 +1,5 @@
 import React from 'react';
+import { Smartphone, Circle, Banknote } from 'lucide-react';
 
 interface PaymentSelectorProps {
   selectedMethod: string;
@@ -14,9 +15,9 @@ export default function PaymentSelector({
   onPhoneChange
 }: PaymentSelectorProps) {
   const methods = [
-    { id: 'momo', name: 'MTN MoMo', icon: '📱' },
-    { id: 'orange', name: 'Orange Money', icon: '🍊' },
-    { id: 'cash', name: 'Cash on Delivery', icon: '💵' },
+    { id: 'momo', name: 'MTN MoMo', icon: <Smartphone className="w-5 h-5" style={{ color: '#FFD600' }} /> },
+    { id: 'orange', name: 'Orange Money', icon: <Circle className="w-5 h-5" style={{ color: '#FF6600', fill: '#FF6600' }} /> },
+    { id: 'cash', name: 'Payer à la livraison', icon: <Banknote className="w-5 h-5" style={{ color: '#00FF88' }} /> },
   ];
 
   const isMobileMoney = selectedMethod === 'momo' || selectedMethod === 'orange';
@@ -27,10 +28,10 @@ export default function PaymentSelector({
         {methods.map((method) => (
           <label
             key={method.id}
-            className={`flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all ${
+            className={`flex items-center p-4 rounded-xl border cursor-pointer transition-all ${
               selectedMethod === method.id
-              ? 'border-orange-500 bg-orange-50 text-orange-900'
-              : 'border-gray-100 bg-white text-gray-700 hover:border-gray-200'
+                ? 'border-[#FFD600]/40 bg-[#FFD600]/5'
+                : 'border-white/10 bg-transparent hover:border-white/20'
             }`}
           >
             <input
@@ -40,12 +41,14 @@ export default function PaymentSelector({
               checked={selectedMethod === method.id}
               onChange={() => onMethodChange(method.id)}
             />
-            <span className="mr-3 text-xl">{method.icon}</span>
-            <span className="font-medium">{method.name}</span>
+            <span className="mr-3">{method.icon}</span>
+            <span className={`font-medium ${selectedMethod === method.id ? 'text-white' : 'text-white/70'}`}>
+              {method.name}
+            </span>
             <div className={`ml-auto w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-              selectedMethod === method.id ? 'border-orange-500' : 'border-gray-300'
+              selectedMethod === method.id ? 'border-[#FFD600]' : 'border-white/20'
             }`}>
-              {selectedMethod === method.id && <div className="w-2.5 h-2.5 rounded-full bg-orange-500" />}
+              {selectedMethod === method.id && <div className="w-2.5 h-2.5 rounded-full bg-[#FFD600]" />}
             </div>
           </label>
         ))}
@@ -53,16 +56,16 @@ export default function PaymentSelector({
 
       {isMobileMoney && (
         <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
-          <label className="text-sm font-medium text-gray-700">Payment Phone Number</label>
+          <label className="text-sm font-medium text-white/70">Numéro de téléphone de paiement</label>
           <input
             type="text"
-            placeholder="e.g. 6xxxxxxxx or +237..."
+            placeholder="ex: 6xxxxxxxx ou +237..."
             value={paymentPhone}
             onChange={(e) => onPhoneChange(e.target.value)}
-            className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
+            className="neon-input"
           />
-          <p className="text-xs text-gray-500">
-            Please enter the phone number associated with your mobile money account.
+          <p className="text-xs text-white/40">
+            Entrez le numéro associé à votre compte mobile money.
           </p>
         </div>
       )}

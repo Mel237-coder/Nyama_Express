@@ -12,5 +12,5 @@ export function TrackingMap({ lat, lng, restaurantLat, restaurantLng, clientLat,
       if (clientLat && clientLng) L.default.marker([clientLat, clientLng]).addTo(map).bindPopup('Client');
     });
   }, [lat, lng, restaurantLat, restaurantLng, clientLat, clientLng]);
-  return <div ref={mapRef} className="w-full h-64 rounded-2xl border border-[#E8E4DC]" />;
+  return <div ref={mapRef} className="w-full h-64 rounded-2xl border-2 border-[#E8E4DC] shadow-md overflow-hidden" />;
 }

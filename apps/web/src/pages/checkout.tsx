@@ -6,6 +6,9 @@ import AddressSelector from '../components/checkout/AddressSelector';
 import OrderSummary from '../components/checkout/OrderSummary';
 import PaymentSelector from '../components/checkout/PaymentSelector';
 import { api, storage } from '../lib/api';
+import { GlassHeader } from '../components/layout/GlassHeader';
+import { GlassCard } from '../components/layout/GlassCard';
+import { NeonButton } from '../components/layout/NeonButton';
 
 interface SavedAddress {
   id: string;
@@ -25,7 +28,7 @@ interface CheckoutAddress {
 export default function CheckoutPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { items, subtotal, deliveryFee, total, clearCart } = useCart();
+  const { items, subtotal, deliveryFee, total, clearCart, restaurantId } = useCart();
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [checkoutAddress, setCheckoutAddress] = useState<CheckoutAddress | null>(null);
   const [paymentMethod, setPaymentMethod] = useState('');
@@ -36,27 +39,22 @@ export default function CheckoutPage() {
   const timersRef = useRef<{ intervalId?: NodeJS.Timeout; timeoutId?: NodeJS.Timeout }>({});
 
   useEffect(() => {
-    // Prevent redirect while auth is still loading
     if (authLoading) return;
 
-    // 1. Auth Guard: Redirect unauthenticated users to login
     if (!isAuthenticated) {
       router.push('/login');
       return;
     }
 
-    // 2. Cart Guard: Redirect users with empty carts back to /cart
     if (items.length === 0) {
-      // Ideally we would use a toast notification here
       alert('Your cart is empty');
       router.push('/cart');
     }
 
-    // 3. Fetch Saved Addresses
     const token = storage.getAccessToken();
     if (token) {
       api.getAddresses(token)
-        .then(addresses => setSavedAddresses(addresses))
+        .then((addresses: any) => setSavedAddresses(addresses))
         .catch(err => console.error('Error fetching saved addresses:', err));
     }
 
@@ -68,8 +66,8 @@ export default function CheckoutPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="shimmer w-12 h-12 rounded-full" />
       </div>
     );
   }
@@ -85,14 +83,12 @@ export default function CheckoutPage() {
       const token = storage.getAccessToken();
       if (!token) throw new Error('Authentication token missing');
 
-      // Get the restaurantId from the first item in the cart
-      const restaurantId = items[0]?.restaurantId;
       if (!restaurantId) throw new Error('No restaurant associated with cart items');
 
-      const orderResponse = await api.createOrder({
+      const orderResponse: any = await api.createOrder({
         restaurantId,
         items: items.map(item => ({
-          menuItemId: item.id,
+          menuItemId: item.menuItemId,
           quantity: item.quantity,
           options: item.options,
         })),
@@ -104,14 +100,12 @@ export default function CheckoutPage() {
 
       const orderId = orderResponse.id;
 
-      // Handle immediate redirection for cash
       if (paymentMethod === 'cash') {
         clearCart();
         router.push(`/order-success?orderId=${orderId}`);
         return;
       }
 
-      // Handle Mobile Money payment initiation
       if (paymentMethod === 'momo' || paymentMethod === 'orange') {
         await api.initiatePayment({
           orderId,
@@ -136,7 +130,7 @@ export default function CheckoutPage() {
         const token = storage.getAccessToken();
         if (!token) return;
 
-        const order = await api.getOrder(orderId, token);
+        const order: any = await api.getOrder(orderId, token);
 
         if (order.status === 'PAID' || order.status === 'CONFIRMED') {
           if (timersRef.current.intervalId) clearInterval(timersRef.current.intervalId);
@@ -154,13 +148,11 @@ export default function CheckoutPage() {
         }
       } catch (error: any) {
         console.error('Polling error:', error);
-        // We don't stop polling on network errors, but we might want a timeout
       }
     }, 7000);
 
     timersRef.current.intervalId = pollInterval;
 
-    // Timeout after 5 minutes
     const pollTimeout = setTimeout(() => {
       if (timersRef.current.intervalId) clearInterval(timersRef.current.intervalId);
       if (timersRef.current.timeoutId) clearTimeout(timersRef.current.timeoutId);
@@ -183,123 +175,123 @@ export default function CheckoutPage() {
     });
   };
 
+  const canPlaceOrder =
+    !isPlacingOrder &&
+    checkoutAddress &&
+    paymentMethod &&
+    ((paymentMethod === 'momo' || paymentMethod === 'orange') ? paymentPhone : true);
+
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
-      <div className="max-w-2xl mx-auto px-4 pt-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">
-          Checkout
-        </h1>
+    <div className="min-h-screen pb-24">
+      <GlassHeader title="Commander" />
 
-        <div className="space-y-6">
-          {/* Section 1: Delivery Address */}
-          <section className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Delivery Address</h2>
+      <div className="max-w-2xl mx-auto px-4 pt-4 space-y-6">
+        {/* Delivery Address */}
+        <GlassCard elevated className="p-6">
+          <h2 className="text-lg font-semibold text-white mb-4">Adresse de livraison</h2>
 
-            {savedAddresses.length > 0 && (
-              <div className="mb-6">
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
-                  Quick Pick
+          {savedAddresses.length > 0 && (
+            <div className="mb-6">
+              <p className="text-xs font-medium text-white/40 uppercase tracking-wider mb-3">
+                Sélection rapide
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {savedAddresses.map((addr) => (
+                  <button
+                    key={addr.id}
+                    onClick={() => handleSavedAddressSelect(addr)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                      checkoutAddress?.text === addr.street
+                        ? 'neon-btn'
+                        : 'ghost-btn'
+                    }`}
+                  >
+                    {addr.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <AddressSelector
+            onAddressConfirm={(address) => setCheckoutAddress(address)}
+          />
+        </GlassCard>
+
+        {/* Order Summary */}
+        <GlassCard elevated className="p-6">
+          <h2 className="text-lg font-semibold text-white mb-4">Résumé de la commande</h2>
+          <OrderSummary
+            items={items}
+            subtotal={subtotal}
+            deliveryFee={deliveryFee}
+            total={total}
+          />
+        </GlassCard>
+
+        {/* Payment Method */}
+        <GlassCard elevated className="p-6">
+          <h2 className="text-lg font-semibold text-white mb-4">Moyen de paiement</h2>
+          <PaymentSelector
+            selectedMethod={paymentMethod}
+            onMethodChange={setPaymentMethod}
+            paymentPhone={paymentPhone}
+            onPhoneChange={setPaymentPhone}
+          />
+        </GlassCard>
+
+        {/* Final Action */}
+        <div className="pt-4">
+          {pollingStatus === 'waiting' ? (
+            <div className="glass p-6 rounded-2xl text-center space-y-4 animate-pulse">
+              <div className="flex justify-center">
+                <div className="shimmer w-10 h-10 rounded-full" />
+              </div>
+              <div className="text-[#FFD600]">
+                <p className="font-bold text-lg">En attente de confirmation...</p>
+                <p className="text-sm text-white/60">Veuillez vérifier votre téléphone pour le paiement</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <NeonButton
+                size="lg"
+                className="w-full"
+                onClick={handlePlaceOrder}
+                disabled={!canPlaceOrder}
+              >
+                {isPlacingOrder ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="inline-block w-5 h-5 border-2 border-[#0A0A0F]/30 border-t-[#0A0A0F] rounded-full animate-spin" />
+                    Traitement...
+                  </span>
+                ) : (
+                  'Confirmer la commande'
+                )}
+              </NeonButton>
+
+              {pollingStatus === 'error' && (
+                <p className="text-center text-[#FF3366] font-medium mt-3">
+                  {pollingError}
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  {savedAddresses.map((addr) => (
-                    <button
-                      key={addr.id}
-                      onClick={() => handleSavedAddressSelect(addr)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                        checkoutAddress?.text === addr.street
-                          ? 'bg-orange-500 text-white shadow-md'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                    >
-                      {addr.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <AddressSelector
-              onAddressConfirm={(address) => setCheckoutAddress(address)}
-            />
-          </section>
-
-          {/* Section 2: Order Summary */}
-          <section className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Order Summary</h2>
-            <OrderSummary
-              items={items}
-              subtotal={subtotal}
-              deliveryFee={deliveryFee}
-              total={total}
-            />
-          </section>
-
-          {/* Section 3: Payment Method */}
-          <section className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Payment Method</h2>
-            <PaymentSelector
-              selectedMethod={paymentMethod}
-              onMethodChange={setPaymentMethod}
-              paymentPhone={paymentPhone}
-              onPhoneChange={setPaymentPhone}
-            />
-          </section>
-
-          {/* Section 4: Final Action */}
-          <section className="pt-4">
-            {pollingStatus === 'waiting' ? (
-              <div className="bg-orange-50 border border-orange-200 p-6 rounded-2xl text-center space-y-4 animate-pulse">
-                <div className="flex justify-center">
-                  <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-orange-500"></div>
-                </div>
-                <div className="text-orange-800">
-                  <p className="font-bold text-lg">Waiting for confirmation...</p>
-                  <p className="text-sm">Please check your phone for the payment prompt</p>
-                </div>
-              </div>
-            ) : (
-              <>
-                <button
-                  onClick={handlePlaceOrder}
-                  disabled={isPlacingOrder || !checkoutAddress || !paymentMethod || ( (paymentMethod === 'momo' || paymentMethod === 'orange') && !paymentPhone)}
-                  className={`w-full py-4 px-6 rounded-xl font-bold text-lg transition-all shadow-lg active:scale-95 ${
-                    (!isPlacingOrder && checkoutAddress && paymentMethod && ( (paymentMethod === 'momo' || paymentMethod === 'orange') ? paymentPhone : true ))
-                    ? 'bg-orange-500 text-white hover:bg-orange-600'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
-                >
-                  {isPlacingOrder ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
-                      Processing...
-                    </span>
-                  ) : (
-                    'Place Order'
-                  )}
-                </button>
-                {pollingStatus === 'error' && (
-                  <p className="text-center text-red-500 font-medium mt-3">
-                    {pollingError}
-                  </p>
-                )}
-                {!checkoutAddress && (
-                  <p className="text-center text-sm text-gray-500 mt-3">
-                    Please confirm your delivery address to continue
-                  </p>
-                )}
-                {!paymentMethod && checkoutAddress && (
-                  <p className="text-center text-sm text-gray-500 mt-3">
-                    Please select a payment method to continue
-                  </p>
-                )}
-                {paymentMethod && (paymentMethod === 'momo' || paymentMethod === 'orange') && !paymentPhone && checkoutAddress && (
-                  <p className="text-center text-sm text-gray-500 mt-3">
-                    Please provide a payment phone number
-                  </p>
-                )}
-              </>
-            )}
-          </section>
+              )}
+              {!checkoutAddress && (
+                <p className="text-center text-sm text-white/40 mt-3">
+                  Veuillez confirmer votre adresse de livraison
+                </p>
+              )}
+              {!paymentMethod && checkoutAddress && (
+                <p className="text-center text-sm text-white/40 mt-3">
+                  Veuillez sélectionner un moyen de paiement
+                </p>
+              )}
+              {paymentMethod && (paymentMethod === 'momo' || paymentMethod === 'orange') && !paymentPhone && checkoutAddress && (
+                <p className="text-center text-sm text-white/40 mt-3">
+                  Veuillez entrer un numéro de téléphone pour le paiement
+                </p>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -1,0 +1,61 @@
+# Design Spec: Restaurant Admin Dashboard
+Date: 2026-05-09
+Status: Approved
+
+## 1. Overview
+The Restaurant Admin Dashboard is the operational command center for restaurant partners. It enables them to manage the order lifecycle in real-time, curate their menu visually, and analyze business performance through data-driven insights.
+
+## 2. User Interface & Experience
+
+### 2.1 Order Management (Kanban Board)
+- **Workspace**: A multi-column board with the following stages:
+  - `Pending`: New orders awaiting confirmation.
+  - `Preparing`: Orders currently being cooked.
+  - la `Ready`: Orders ready for driver pickup.
+  - `Picked Up`: Orders in transit to the customer.
+- **Interaction**:
+  - Drag-and-drop movement of order cards between columns.
+  - Side-panel detail view: Item list, customizations, customer contact, and delivery instructions.
+- **Alerts**: Real-time visual and audio notifications for new `Pending` orders.
+
+### 2.2 Menu Management (Visual Editor)
+- **Gallery View**: A grid of item cards mirroring the customer's perspective.
+- **Editing Interface**:
+  - "Out of Stock" quick-toggle to instantly disable items.
+  - Image upload integration via Cloudinary.
+  - Field editors for price, name, and description.
+- **Category Organization**: Ability to move items between cuisine categories.
+
+### 2.3 Business Intelligence (Analytics)
+- **Performance Metrics**:
+  - Revenue trends (7-day/30-day line charts).
+  - Top 5 best-selling items (Ranked list).
+  - Category popularity (Pie chart).
+- **Financials**: Breakdown of Gross Revenue, Platform Commission, and Net Payout.
+
+## 3. Technical Design
+
+### 3.1 Real-Time Infrastructure
+- **WebSocket Integration**:
+  - Connection to `websocket-gateway`.
+  - Events: `order:new`, `order:status_update`, `driver:assigned`.
+- **Data Synchronization**: Optimistic UI updates for Kanban movements, with fallback to API status on failure.
+
+### 3.2 API Surface
+- `GET /api/admin/orders`: Fetch all active and historical orders.
+- `PATCH /api/admin/orders/[id]/status`: Update order stage.
+- `GET /api/admin/menu`: Fetch the restaurant's current menu.
+- `PATCH /api/admin/menu-items/[id]`: Update item details/availability.
+- `GET /api/admin/analytics`: Fetch revenue and popularity data.
+
+### 3.3 Guards & Security
+- **Role-Based Access (RBAC)**: Middleware check ensuring the user has the `RESTAURANT_ADMIN` role.
+- **Ownership Verification**: Ensure the admin is modifying items belonging to their specific restaurant ID.
+
+## 4. Implementation Steps
+1. Create the Admin Dashboard layout and RBAC guard.
+2. Implement the Kanban Order Board with real-time WebSocket updates.
+3. Build the Visual Menu Editor with the "Out of Stock" toggle.
+4. Develop the Analytics Dashboard with revenue and popularity charts.
+5. Implement a global notification system for new orders.
+6. Final polishing of the mobile-responsive admin view.

@@ -17,26 +17,34 @@ const MenuCategoryNav: React.FC<MenuCategoryNavProps> = ({
   onSelect
 }) => {
   return (
-    <div className="sticky top-0 z-10 bg-white shadow-sm">
-      <div className="flex overflow-x-auto py-3 px-4 space-x-3 no-scrollbar">
+    <div
+      className="sticky top-0 z-10 px-4 py-3"
+      style={{
+        backgroundColor: 'rgba(10, 10, 15, 0.85)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+      }}
+    >
+      <div className="flex overflow-x-auto space-x-2 no-scrollbar">
         <button
           onClick={() => onSelect('all')}
-          className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+          className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${
             selectedCategoryId === 'all'
-              ? 'bg-orange-500 text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              ? 'neon-btn'
+              : 'ghost-btn'
           }`}
         >
-          All
+          Tout
         </button>
         {categories.map((category) => (
           <button
             key={category.id}
             onClick={() => onSelect(category.id)}
-            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${
               selectedCategoryId === category.id
-                ? 'bg-orange-500 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'neon-btn'
+                : 'ghost-btn'
             }`}
           >
             {category.name}

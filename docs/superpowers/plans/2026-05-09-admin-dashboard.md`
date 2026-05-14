@@ -1,0 +1,131 @@
+# Restaurant Admin Dashboard Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Build a comprehensive operational dashboard for restaurant partners to manage orders (Kanban), curate menus (Visual Editor), and track business growth (Analytics).
+
+**Architecture:** A specialized admin la-section of the web app. It uses a role-based access control (RBAC) guard to restrict access. Real-time order updates are handled via Socket.io, while menu and analytics data are managed via REST API endpoints.
+
+**Tech Stack:** Next.js 14, React, Tailwind CSS, Socket.io-client, Lucide React, Recharts (for analytics).
+
+---
+
+## File Structure
+
+- Create: `apps/web/src/pages/admin/dashboard.tsx` - Main admin entry point and RBAC guard.
+- Create: `apps/web/src/pages/admin/orders.tsx` - Kanban board for order management.
+- Create: `apps/web/src/components/admin/OrderKanban.tsx` - Drag-and-drop order board logic.
+- Create: `apps/web/src/components/admin/OrderDetailsPanel.tsx` - Side-panel for detailed order view.
+- Create: `apps/web/src/pages/admin/menu.tsx` - Visual menu editor.
+- Create: `apps/web/src/components/admin/MenuCard.tsx` - Individual item editor with "Out of Stock" toggle.
+- Create: `apps/web/src/pages/admin/analytics.tsx` - Data visualization dashboard.
+- Create: `apps/web/src/components/admin/AnalyticsCharts.tsx` - Revenue and popularity charts using Recharts.
+
+---
+
+### Task 1: Admin Shell & RBAC Guard
+
+**Files:**
+- Create: `apps/web/src/pages/admin/dashboard.tsx`
+
+- [ ] **Step 1: Implement the Admin Route Guard**
+  Use `useAuth` to verify the user has the `RESTAURANT_ADMIN` role. Redirect to `/` or an "Unauthorized" page if the role is missing.
+
+- [ ] **Step 2: Build the Admin Dashboard Layout**
+  Create a side-navigation layout with links to:
+  - Orders (`/admin/orders`)
+  - Menu (`/admin/menu`)
+  - Analytics (`/admin/analytics`)
+
+- [ ] **Step 3: Implement a basic "Stats Overview" on the home dashboard**
+  Display 3-4 high-level metrics (e.g., Today's Orders, Revenue, Active Drivers).
+
+- [ ] **Step 4: Commit**
+  `git commit -m "feat(admin): implement dashboard shell and RBAC guard"`
+
+---
+
+### Task 2: Real-Time Kanban Order Board
+
+**Files:**
+- Create: `apps/web/src/pages/admin/orders.tsx`
+- Create: `apps/web/src/components/admin/OrderKanban.tsx`
+- Create: `apps/web/src/components/admin/OrderDetailsPanel.tsx`
+
+- [ ] **Step 1: Implement the Kanban UI**
+  Create four columns: `Pending`, `Preparing`, `Ready`, `Picked Up`.
+
+- [ ] **Step 2: Implement Order Card and Drag-and-Drop**
+  Render orders as cards. Implement a status-update handler that calls `api.updateOrderStatus(id, newStatus)` when a card is moved.
+
+- [ ] **Step 3: Build the Order Details Side-Panel**
+  When a card is clicked, open a panel showing:
+  - Full item list with customizations.
+  - Delivery la-address and customer contact.
+  - "Call Customer" button.
+
+- [ ] **Step 4: Integrate Socket.io for Live Updates**
+  Listen for `order:new` and `order:status_update` events to move cards across the board in real-time without a page refresh.
+
+- [ ] **Step 5: Commit**
+  `git commit -m "feat(admin): implement real-time kanban order board"`
+
+---
+
+### Task 3: Visual Menu Editor
+
+**Files:**
+- Create: `apps/web/src/pages/admin/menu.tsx`
+- Create: `apps/web/src/components/admin/MenuCard.tsx`
+
+- [ ] **Step 1: Implement Menu Gallery View**
+  Fetch all items for the restaurant and display them as visual cards.
+
+- [ ] **Step 2: Implement "Out of Stock" Quick-Toggle**
+  Add a toggle switch to each card that calls `api.updateItemAvailability(id, status)` immediately.
+
+- [ ] **Step 3: Build the Edit Modal**
+  Create a modal to edit the item's name, description, price, and upload a new image via Cloudinary.
+
+- [ ] **Step 4: Commit**
+  `git commit -m "feat(admin): implement visual menu editor with stock toggles"`
+
+---
+
+### Task 4: Analytics Dashboard
+
+**Files:**
+- Create: `apps/web/src/pages/admin/analytics.tsx`
+- Create: `apps/web/src/components/admin/AnalyticsCharts.tsx`
+
+- [ ] **Step 1: Implement Revenue Line Chart**
+  Use Recharts to plot daily revenue over the last 30 days using data from `api.getAnalytics`.
+
+- [ ] **Step 2: Implement "Top 5 Best-Sellers" List**
+  Create a ranked list of items based on order quantity.
+
+- [ ] **Step 3: Implement Category Popularity Pie Chart**
+  Visualize which categories (e.g., "African", "Pizza") are the most ordered.
+
+- [ ] **Step 4: Commit**
+  `git commit -m "feat(admin): implement business analytics dashboard"`
+
+---
+
+### Task 5: Global Notifications & Final Polish
+
+**Files:**
+- Modify: `apps/web/src/pages/admin/orders.tsx`
+- Modify: `apps/web/src/pages/admin/dashboard.tsx`
+
+- [ ] **Step 1: Implement Audio Alerts for New Orders**
+  Play a distinct notification sound when a `order:new` socket event is received.
+
+- [ ] **Step 2: Implement a "New Order" Toast Notification**
+  Show a floating alert with the order ID and a "Go to Order" button.
+
+- [ ] **Step 3: Mobile Responsiveness Audit**
+  Ensure the Kanban board becomes a single-column view on mobile and the side-panel becomes a full-screen modal.
+
+- [ ] **Step 4: Commit**
+  `git commit -m "feat(admin): add real-time la-notifications and mobile polish"`

@@ -5,7 +5,7 @@
 
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 interface PaymentRequest {
   amount: number;        // Montant en FCFA
@@ -203,7 +203,7 @@ export class MtnMomoService {
       const url = `https://sandbox.momodeveloper.mtn.com/collection/v1_0/requesttopay`;
 
       const request: PaymentRequest = {
-        amount: amount.toString(),
+        amount,
         currency: 'XAF',
         externalId: orderId,
         payer: {
@@ -341,14 +341,19 @@ export class MtnMomoService {
     if (!this.subscriptionKey || originalPaymentId.startsWith('sim_')) {
       this.logger.debug(`[SIMULATED] Refund of ${amount} FCFA for payment ${originalPaymentId}`);
 
-      await this.prisma.payment.update({
+      const payment = await this.prisma.payment.findFirst({
         where: { internalPaymentId: originalPaymentId },
-        data: {
-          status: 'REFUNDED',
-          refundReason: reason,
-          refundedAt: new Date(),
-        },
       });
+      if (payment) {
+        await this.prisma.payment.update({
+          where: { id: payment.id },
+          data: {
+            status: 'REFUNDED',
+            refundReason: reason,
+            refundedAt: new Date(),
+          },
+        });
+      }
 
       return { success: true, refundId: `ref_${Date.now()}` };
     }
@@ -438,7 +443,7 @@ export class MtnMomoService {
     await this.prisma.order.update({
       where: { id: payment.orderId },
       data: {
-        paymentStatus: newStatus === 'SUCCESS' ? 'PAID' : 'FAILED',
+        paymentStatus: newStatus === 'SUCCESS' ? 'SUCCESS' : 'FAILED',
       },
     });
 

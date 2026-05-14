@@ -8,8 +8,8 @@ import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
 const DefaultIcon = L.icon({
-  iconUrl: markerIcon.src || markerIcon,
-  shadowUrl: markerShadow.src || markerShadow,
+  iconUrl: markerIcon.src,
+  shadowUrl: markerShadow.src,
   iconSize: [25, 41],
   iconAnchor: [12, 41],
 });

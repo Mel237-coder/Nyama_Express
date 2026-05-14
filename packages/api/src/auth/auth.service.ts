@@ -2,22 +2,23 @@
 // Service d'authentification - Gestion OTP et JWT
 // ============================================
 
-import { Injectable, Logger, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException, ConflictException, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
-import { AfricaTalkingService } from '../common/sms/africa-talking.service';
+import { EmailService } from '../common/email/email.service';
 import { OtpService } from '../common/sms/otp.service';
-import { RequestOtpDto, VerifyOtpDto } from './dto/request-otp.dto';
+import { RequestOtpDto } from './dto/request-otp.dto';
+import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { UserRole, UserStatus } from '@prisma/client';
 
 interface TokenPayload {
   sub: string;  // userId
-  phone: string;
+  email: string;
   role: UserRole;
 }
 
-interface AuthTokens {
+export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
 }
@@ -29,7 +30,7 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
-    private africaTalking: AfricaTalkingService,
+    private emailService: EmailService,
     private otpService: OtpService,
     private configService: ConfigService,
   ) {}
@@ -39,71 +40,73 @@ export class AuthService {
   // ============================================
 
   /**
-   * Demande un code OTP pour un numéro de téléphone
+   * Demande un code OTP pour un email
    * Crée un nouvel utilisateur si nécessaire
    */
-  async requestOtp(dto: RequestOtpDto): Promise<{ message: string; isNewUser: boolean }> {
-    const { phone } = dto;
-    const formattedPhone = this.formatPhone(phone);
+  async requestOtp(dto: RequestOtpDto): Promise<{ message: string; isNewUser: boolean; devOtp?: string }> {
+    const { email, phone } = dto;
 
-    // Recherche utilisateur existant
+    // Recherche utilisateur existant par email
     let user = await this.prisma.user.findUnique({
-      where: { phone: formattedPhone },
+      where: { email },
     });
 
     const isNewUser = !user;
 
     // Nouvel utilisateur : créer le compte
     if (isNewUser) {
-      // Vérifier qu'il n'existe pas (au cas où)
-      const existing = await this.prisma.user.findFirst({
-        where: {
-          phone: {
-            contains: formattedPhone.slice(-9), // Comparaison par suffixe
-          },
-        },
-      });
-
-      if (existing) {
-        throw new ConflictException('Ce numéro est déjà enregistré');
-      }
-
       user = await this.prisma.user.create({
         data: {
-          phone: formattedPhone,
-          role: UserRole.CLIENT, // Par défaut, nouveau = client
+          email,
+          phone: phone || null,
+          role: UserRole.CLIENT,
           status: UserStatus.PENDING,
         },
       });
 
-      this.logger.log(`New user created: ${this.maskPhone(formattedPhone)}`);
+      this.logger.log(`New user created: ${this.maskEmail(email)}`);
+    }
+
+    if (!user) {
+      throw new UnauthorizedException('Impossible de créer ou trouver l\'utilisateur');
+    }
+
+    if (phone && !user.phone) {
+      // Mettre à jour le téléphone si fourni et absent
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { phone },
+      });
     }
 
     // Générer et envoyer OTP
-    const otp = this.otpService.generateOtp(formattedPhone);
+    const otp = this.otpService.generateOtp(email);
 
-    // Construction du message selon la langue
-    const message = `Votre code FoodApp: ${otp}\nValide 5 minutes.\nNe partagez jamais ce code.`;
-
-    // Envoyer par SMS
-    const result = await this.africaTalking.sendSms({
-      to: formattedPhone,
-      message,
-    });
+    // Envoyer par email
+    const result = await this.emailService.sendOtp(email, otp);
 
     if (!result.success) {
-      this.logger.error(`Failed to send OTP to ${this.maskPhone(formattedPhone)}: ${result.error}`);
-      // En développement, on log le code quand même
+      this.logger.error(`Failed to send OTP to ${this.maskEmail(email)}: ${result.error}`);
+
+      // En développement, on simule l'envoi pour permettre les tests
       if (process.env.NODE_ENV === 'development') {
-        this.logger.warn(`[DEV] OTP for ${this.maskPhone(formattedPhone)}: ${otp}`);
+        this.logger.warn(`[DEV] OTP for ${this.maskEmail(email)}: ${otp}`);
+        return {
+          message: isNewUser
+            ? 'Un code de vérification a été envoyé à votre adresse e-mail.'
+            : 'Un code de vérification a été envoyé.',
+          isNewUser,
+          devOtp: otp,
+        };
       }
-      throw new UnauthorizedException('Échec de l\'envoi du SMS. Veuillez réessayer.');
+
+      throw new ServiceUnavailableException('Échec de l\'envoi de l\'e-mail. Veuillez réessayer.');
     }
 
-    this.logger.log(`OTP sent to ${this.maskPhone(formattedPhone)}`);
+    this.logger.log(`OTP sent to ${this.maskEmail(email)}`);
     return {
       message: isNewUser
-        ? 'Un code de vérification a été envoyé à votre numéro.'
+        ? 'Un code de vérification a été envoyé à votre adresse e-mail.'
         : 'Un code de vérification a été envoyé.',
       isNewUser,
     };
@@ -122,18 +125,17 @@ export class AuthService {
     user: any;
     requiresProfile: boolean;
   }> {
-    const { phone, code } = dto;
-    const formattedPhone = this.formatPhone(phone);
+    const { email, code } = dto;
 
     // Valider OTP
-    const validation = this.otpService.validateOtp(formattedPhone, code);
+    const validation = this.otpService.validateOtp(email, code);
     if (!validation.valid) {
       throw new UnauthorizedException(validation.error);
     }
 
     // Récupérer l'utilisateur
     const user = await this.prisma.user.findUnique({
-      where: { phone: formattedPhone },
+      where: { email },
       include: { documents: true },
     });
 
@@ -160,7 +162,7 @@ export class AuthService {
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
       user: this.sanitizeUser(user),
-      requiresProfile: !user.firstName, // Demander de compléter le profil si pas de nom
+      requiresProfile: !user.firstName,
     };
   }
 
@@ -173,12 +175,10 @@ export class AuthService {
    */
   async refreshTokens(refreshToken: string): Promise<AuthTokens> {
     try {
-      // Vérifier le token
       const payload = this.jwtService.verify<TokenPayload>(refreshToken, {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
       });
 
-      // Vérifier en base
       const session = await this.prisma.session.findFirst({
         where: {
           userId: payload.sub,
@@ -191,7 +191,6 @@ export class AuthService {
         throw new UnauthorizedException('Session invalide');
       }
 
-      // Vérifier expiration
       if (new Date(session.expiresAt) < new Date()) {
         await this.prisma.session.update({
           where: { id: session.id },
@@ -200,7 +199,6 @@ export class AuthService {
         throw new UnauthorizedException('Session expirée');
       }
 
-      // Générer nouveaux tokens
       const user = await this.prisma.user.findUnique({
         where: { id: payload.sub },
       });
@@ -211,12 +209,11 @@ export class AuthService {
 
       const tokens = await this.generateTokens(user);
 
-      // Mettre à jour le refresh token
       await this.prisma.session.update({
         where: { id: session.id },
         data: {
           refreshToken: tokens.refreshToken,
-          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 jours
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         },
       });
 
@@ -232,9 +229,6 @@ export class AuthService {
   // DÉCONNEXION
   // ============================================
 
-  /**
-   * Révoque la session courante
-   */
   async logout(userId: string): Promise<void> {
     await this.prisma.session.updateMany({
       where: { userId, revokedAt: null },
@@ -249,7 +243,7 @@ export class AuthService {
   private async generateTokens(user: any): Promise<AuthTokens> {
     const payload: TokenPayload = {
       sub: user.id,
-      phone: user.phone,
+      email: user.email,
       role: user.role,
     };
 
@@ -267,12 +261,10 @@ export class AuthService {
   }
 
   private async saveRefreshToken(userId: string, token: string): Promise<void> {
-    // Supprimer les anciennes sessions
     await this.prisma.session.deleteMany({
       where: { userId, revokedAt: { not: null } },
     });
 
-    // Créer nouvelle session
     await this.prisma.session.create({
       data: {
         userId,
@@ -286,35 +278,15 @@ export class AuthService {
   // UTILITAIRES
   // ============================================
 
-  /**
-   * Formate un numéro de téléphone camerounais
-   */
-  private formatPhone(phone: string): string {
-    let cleaned = phone.replace(/[\s\-]/g, '');
-
-    if (cleaned.startsWith('00')) {
-      cleaned = '+' + cleaned.substring(2);
-    } else if (!cleaned.startsWith('+')) {
-      if (cleaned.startsWith('237')) {
-        cleaned = '+' + cleaned;
-      } else if (cleaned.startsWith('6') || cleaned.startsWith('2')) {
-        cleaned = '+237' + cleaned;
-      }
-    }
-
-    return cleaned;
-  }
-
-  /**
-   * Retire les données sensibles du profil utilisateur
-   */
   private sanitizeUser(user: any): any {
     const { passwordHash, otpAttempts, lastOtpAt, ...rest } = user;
     return rest;
   }
 
-  private maskPhone(phone: string): string {
-    if (!phone || phone.length < 4) return '****';
-    return phone.slice(0, 4) + '****' + phone.slice(-2);
+  private maskEmail(email: string): string {
+    if (!email || !email.includes('@')) return '****';
+    const [local, domain] = email.split('@');
+    const maskedLocal = local.length > 2 ? local.slice(0, 2) + '***' : '***';
+    return `${maskedLocal}@${domain}`;
   }
 }

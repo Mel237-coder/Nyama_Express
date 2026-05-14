@@ -14,15 +14,15 @@ interface MenuItemProps {
 
 const MenuItem: React.FC<MenuItemProps> = ({ item, onAdd }) => {
   return (
-    <div className="relative flex bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-shadow p-3 group">
-      <div className="flex-1 pr-4">
-        <h3 className="font-bold text-gray-900 text-lg line-clamp-1">{item.name}</h3>
-        <p className="text-gray-500 text-sm line-clamp-2 min-h-[40px] mb-2">
-          {item.description || 'No description available'}
+    <div className="relative flex glass overflow-hidden hover:bg-white/5 transition-colors p-3 group cursor-pointer">
+      <div className="flex-1 pr-4 min-w-0">
+        <h3 className="font-bold text-white text-lg line-clamp-1">{item.name}</h3>
+        <p className="text-white/40 text-sm line-clamp-2 min-h-[40px] mb-2">
+          {item.description || 'Aucune description disponible'}
         </p>
         <div className="flex items-center justify-between mt-auto">
-          <span className="font-bold text-orange-600 text-lg">
-            {item.price.toLocaleString()} FCFA
+          <span className="font-bold text-[#FFD600] text-lg">
+            {item.price.toLocaleString()} F
           </span>
         </div>
       </div>
@@ -35,8 +35,8 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, onAdd }) => {
         />
         <button
           onClick={() => onAdd(item)}
-          className="absolute -bottom-2 -right-2 bg-orange-500 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg hover:bg-orange-600 transition-colors z-10"
-          aria-label="Add to cart"
+          className="absolute -bottom-2 -right-2 neon-btn w-8 h-8 flex items-center justify-center rounded-full z-10 p-0"
+          aria-label="Ajouter au panier"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

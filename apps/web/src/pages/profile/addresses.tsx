@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import Link from 'next/link';
 import {
   MapPin,
   Plus,
   Check,
   ArrowLeft,
-  Save,
   AlertCircle,
   Loader2
 } from 'lucide-react';
@@ -14,13 +12,16 @@ import { api, storage } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
 import { AddressCard } from '../../components/profile/AddressCard';
 import { AddressForm } from '../../components/profile/AddressForm';
+import { GlassHeader } from '../../components/layout/GlassHeader';
+import { NeonButton } from '../../components/layout/NeonButton';
 
-interface Address {
+export interface Address {
   id: string;
   label: string;
   street: string;
   latitude?: number;
   longitude?: number;
+  landmarks?: string;
   zoneId?: string;
   isDefault: boolean;
 }
@@ -56,7 +57,7 @@ export default function AddressBookPage() {
     setIsLoading(true);
     try {
       const token = storage.getAccessToken() || '';
-      const data = await api.getAddresses(token);
+      const data: any = await api.getAddresses(token);
       setAddresses(data);
     } catch (e) {
       setMessage({ text: 'Failed to load addresses', type: 'error' });
@@ -107,28 +108,32 @@ export default function AddressBookPage() {
 
   if (authLoading || (isLoading && addresses.length === 0)) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <Loader2 className="animate-spin text-orange-500" size={32} />
+      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-[#FFD600] border-t-transparent rounded-full animate-spin" />
+          <p className="text-white/60 font-medium">Loading addresses...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 pt-12 pb-4 px-4 flex items-center gap-4">
-        <button
-          onClick={() => router.push('/profile')}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-        >
-          <ArrowLeft size={24} className="text-gray-600" />
-        </button>
-        <h1 className="text-xl font-bold text-gray-900">Address Book</h1>
-      </div>
+    <div className="min-h-screen bg-[#0A0A0F] pb-24">
+      <GlassHeader
+        title="Address Book"
+        right={
+          <button
+            onClick={() => router.push('/profile')}
+            className="p-2 hover:bg-white/5 rounded-full transition-colors"
+          >
+            <ArrowLeft size={20} className="text-white/70" />
+          </button>
+        }
+      />
 
       <div className="max-w-md mx-auto px-4 mt-6 space-y-6">
         {message && (
-          <div className={`p-4 rounded-xl flex items-center gap-3 ${message.type === 'success' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-700 border border-red-100'}`}>
+          <div className={`p-4 rounded-xl flex items-center gap-3 border ${message.type === 'success' ? 'bg-[#00FF88]/10 text-[#00FF88] border-[#00FF88]/20' : 'bg-[#FF3366]/10 text-[#FF3366] border-[#FF3366]/20'}`}>
             {message.type === 'success' ? <Check size={20} /> : <AlertCircle size={20} />}
             <span className="text-sm font-medium">{message.text}</span>
           </div>
@@ -136,13 +141,10 @@ export default function AddressBookPage() {
 
         {/* Add Address Button */}
         {!isAdding && (
-          <button
-            onClick={() => setIsAdding(true)}
-            className="w-full py-4 bg-white border-2 border-dashed border-gray-300 rounded-2xl text-gray-500 font-medium flex items-center justify-center gap-2 hover:border-orange-500 hover:text-orange-500 transition-all"
-          >
+          <NeonButton onClick={() => setIsAdding(true)} className="w-full">
             <Plus size={20} />
             Add New Address
-          </button>
+          </NeonButton>
         )}
 
         {/* Add Address Form */}
@@ -159,11 +161,11 @@ export default function AddressBookPage() {
 
         {/* Address List */}
         <div className="space-y-3">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider px-1">Saved Addresses</h2>
+          <h2 className="text-sm font-semibold text-white/40 uppercase tracking-wider px-1">Saved Addresses</h2>
           {addresses.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-2xl border border-gray-100">
-              <MapPin className="mx-auto text-gray-300 mb-3" size={40} />
-              <p className="text-gray-500">No addresses saved yet</p>
+            <div className="text-center py-12 glass">
+              <MapPin className="mx-auto text-white/20 mb-3" size={40} />
+              <p className="text-white/40">No addresses saved yet</p>
             </div>
           ) : (
             addresses.map((addr) => (

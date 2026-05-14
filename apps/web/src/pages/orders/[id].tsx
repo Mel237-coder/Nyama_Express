@@ -4,15 +4,19 @@ import { useAuth } from '../../hooks/useAuth';
 import { api, storage } from '../../lib/api';
 import { socket } from '../../lib/websocket';
 import dynamic from 'next/dynamic';
+import { AlertTriangle } from 'lucide-react';
+import { GlassHeader } from '../../components/layout/GlassHeader';
+import { GlassCard } from '../../components/layout/GlassCard';
 import StatusHeader from '../../components/tracking/StatusHeader';
 import DriverCard from '../../components/tracking/DriverCard';
+import ArrivedOverlay from '../../components/tracking/ArrivedOverlay';
 
 // Import TrackingMap dynamically to avoid SSR issues with Leaflet
 const TrackingMap = dynamic(() => import('../../components/tracking/TrackingMap'), {
   ssr: false,
   loading: () => (
-    <div className="h-[400px] w-full bg-gray-200 animate-pulse rounded-2xl flex items-center justify-center">
-      <p className="text-gray-500">Loading map...</p>
+    <div className="h-[400px] w-full shimmer rounded-2xl flex items-center justify-center">
+      <p className="text-white/40">Loading map...</p>
     </div>
   ),
 });
@@ -45,6 +49,15 @@ interface OrderDetails extends Order {
   };
 }
 
+const ORDER_STEPS = [
+  { key: 'PENDING', label: 'Commande reçue' },
+  { key: 'PREPARING', label: 'En préparation' },
+  { key: 'READY', label: 'Prête' },
+  { key: 'OUT_FOR_DELIVERY', label: 'En livraison' },
+  { key: 'ARRIVED', label: 'Arrivée' },
+  { key: 'DELIVERED', label: 'Livrée' },
+];
+
 export default function OrderTrackingPage() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
@@ -55,6 +68,7 @@ export default function OrderTrackingPage() {
   const [error, setError] = useState<string | null>(null);
   const [driverCoords, setDriverCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [status, setStatus] = useState<string | null>(null);
+  const [isConfirming, setIsConfirming] = useState(false);
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -68,7 +82,7 @@ export default function OrderTrackingPage() {
           return;
         }
 
-        const orderData = await api.getOrder(id as string, token);
+        const orderData: any = await api.getOrder(id as string, token);
         if (orderData) {
           setOrder(orderData);
           setStatus(orderData.status);
@@ -111,7 +125,7 @@ export default function OrderTrackingPage() {
         try {
           const token = storage.getAccessToken();
           if (token) {
-            const trackingData = await api.getDeliveryTracking(id as string, token);
+            const trackingData: any = await api.getDeliveryTracking(id as string, token);
             if (trackingData) {
               setStatus(trackingData.status);
               if (trackingData.currentLatitude && trackingData.currentLongitude) {
@@ -139,10 +153,10 @@ export default function OrderTrackingPage() {
 
   if (authLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-gray-600 font-medium">Loading your order...</p>
+          <div className="w-12 h-12 border-4 border-[#FFD600] border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-white/60 font-medium">Loading your order...</p>
         </div>
       </div>
     );
@@ -150,18 +164,18 @@ export default function OrderTrackingPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full text-center bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-          <div className="text-red-500 text-4xl mb-4">⚠️</div>
-          <h1 className="text-xl font-bold text-gray-900 mb-2">Oops!</h1>
-          <p className="text-gray-600 mb-6">{error}</p>
+      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center p-4">
+        <GlassCard className="max-w-md w-full text-center p-8">
+          <AlertTriangle className="w-10 h-10 mx-auto mb-4" style={{ color: '#FF3366' }} />
+          <h1 className="text-xl font-bold text-white mb-2">Oops!</h1>
+          <p className="text-white/60 mb-6">{error}</p>
           <button
             onClick={() => router.push('/')}
-            className="w-full py-3 px-4 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+            className="neon-btn w-full"
           >
             Return Home
           </button>
-        </div>
+        </GlassCard>
       </div>
     );
   }
@@ -170,22 +184,36 @@ export default function OrderTrackingPage() {
   const currentEta = order?.tracking?.eta || null;
   const currentDriver = order?.driver;
 
+  const handleConfirmReceipt = async () => {
+    if (!id) return;
+    setIsConfirming(true);
+    try {
+      const token = storage.getAccessToken();
+      if (token) {
+        await api.confirmDelivery(id as string, token);
+        alert('Thank you for your order! Enjoy your meal!');
+        router.push('/orders');
+      }
+    } catch (err: any) {
+      console.error('Confirmation error:', err);
+      alert('Failed to confirm receipt. Please try again.');
+    } finally {
+      setIsConfirming(false);
+    }
+  };
+
+  const getStepStatus = (stepKey: string) => {
+    const stepIndex = ORDER_STEPS.findIndex(s => s.key === stepKey);
+    const currentIndex = ORDER_STEPS.findIndex(s => s.key === currentStatus);
+    if (currentIndex === -1) return 'future';
+    if (stepIndex < currentIndex) return 'completed';
+    if (stepIndex === currentIndex) return 'current';
+    return 'future';
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-6 sticky top-0 z-10">
-        <div className="max-w-md mx-auto flex items-center gap-4">
-          <button
-            onClick={() => router.back()}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <h1 className="text-xl font-bold text-gray-900">Order Tracking</h1>
-        </div>
-      </div>
+    <div className="min-h-screen bg-[#0A0A0F] pb-24">
+      <GlassHeader title="Order Tracking" />
 
       <main className="max-w-md mx-auto px-4 py-6">
         {order && (
@@ -196,34 +224,72 @@ export default function OrderTrackingPage() {
             />
 
             {/* Order Summary Card */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <GlassCard className="p-6">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <p className="text-sm text-gray-500">Order ID</p>
-                  <p className="font-mono text-sm font-medium text-gray-900">#{order.id.slice(-8).toUpperCase()}</p>
+                  <p className="text-sm text-white/50">Order ID</p>
+                  <p className="font-mono text-sm font-medium text-white">#{order.id.slice(-8).toUpperCase()}</p>
                 </div>
                 <div className="text-right">
-                  <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                    currentStatus === 'DELIVERED' ? 'bg-green-100 text-green-700' :
-                    currentStatus === 'CANCELED' ? 'bg-red-100 text-red-700' :
-                    'bg-blue-100 text-blue-700'
+                  <span className={`neon-badge ${
+                    currentStatus === 'DELIVERED' ? 'bg-[#00FF88]/10 text-[#00FF88] border-[#00FF88]/20' :
+                    currentStatus === 'CANCELED' ? 'bg-[#FF3366]/10 text-[#FF3366] border-[#FF3366]/20' :
+                    'bg-[#00D4FF]/10 text-[#00D4FF] border-[#00D4FF]/20'
                   }`}>
                     {currentStatus}
                   </span>
                 </div>
               </div>
-              <div className="border-t border-gray-100 pt-4 mt-4">
+              <div className="border-t border-white/10 pt-4 mt-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Total Amount</span>
-                  <span className="text-lg font-bold text-gray-900">{order.totalAmount.toLocaleString()} FCFA</span>
+                  <span className="text-white/60">Total Amount</span>
+                  <span className="text-lg font-bold text-[#FFD600]">{order.totalAmount.toLocaleString()} FCFA</span>
                 </div>
               </div>
-            </div>
+            </GlassCard>
+
+            {/* Status Timeline */}
+            <GlassCard className="p-6">
+              <h3 className="text-lg font-bold text-white mb-4">Status Timeline</h3>
+              <div className="space-y-0">
+                {ORDER_STEPS.map((step, index) => {
+                  const stepStatus = getStepStatus(step.key);
+                  const isLast = index === ORDER_STEPS.length - 1;
+                  return (
+                    <div key={step.key} className="flex gap-4">
+                      <div className="flex flex-col items-center">
+                        <div className={`w-3 h-3 rounded-full ${
+                          stepStatus === 'current' ? 'bg-[#00D4FF] pulse-neon' :
+                          stepStatus === 'completed' ? 'bg-[#00FF88]' :
+                          'bg-white/20'
+                        }`}
+                        />
+                        {!isLast && (
+                          <div className={`w-0.5 h-8 ${
+                            stepStatus === 'completed' ? 'bg-[#00FF88]/40' : 'bg-white/10'
+                          }`}
+                          />
+                        )}
+                      </div>
+                      <div className="pb-6">
+                        <p className={`text-sm font-medium ${
+                          stepStatus === 'current' ? 'status-info' :
+                          stepStatus === 'completed' ? 'status-success' :
+                          'text-white/40'
+                        }`}>
+                          {step.label}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </GlassCard>
 
             {/* Live Tracking Map */}
-            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-s-ping"></span>
+            <GlassCard className="p-4">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <span className="w-2 h-2 bg-[#00FF88] rounded-full animate-pulse"></span>
                 Live Tracking
               </h3>
               <div className="h-[400px] w-full">
@@ -243,7 +309,7 @@ export default function OrderTrackingPage() {
                   }
                 />
               </div>
-            </div>
+            </GlassCard>
           </div>
         )}
 
@@ -251,6 +317,13 @@ export default function OrderTrackingPage() {
           <DriverCard driver={currentDriver} />
         )}
       </main>
+
+      {(currentStatus === 'ARRIVED' || currentStatus === 'DELIVERED') && (
+        <ArrivedOverlay
+          orderId={id as string}
+          onConfirm={handleConfirmReceipt}
+        />
+      )}
     </div>
   );
 }

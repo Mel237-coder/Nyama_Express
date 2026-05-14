@@ -36,6 +36,7 @@ const CartContext = createContext<CartContextType>({
   addItem: () => {},
   removeItem: () => {},
   updateQuantity: () => {},
+  updateItemOption: () => {},
   clearCart: () => {},
   subtotal: 0,
   deliveryFee: 500,

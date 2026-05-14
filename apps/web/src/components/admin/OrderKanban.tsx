@@ -8,13 +8,11 @@ import { BellRing } from 'lucide-react';
 
 type OrderStatus = 'PENDING' | 'PREPARING' | 'READY' | 'PICKED_UP';
 
-type OrderStatus = 'PENDING' | 'PREPARING' | 'READY' | 'PICKED_UP';
-
-const COLUMNS: { id: OrderStatus; label: string }[] = [
-  { id: 'PENDING', label: 'Pending' },
-  { id: 'PREPARING', label: 'Preparing' },
-  { id: 'READY', label: 'Ready' },
-  { id: 'PICKED_UP', label: 'Picked Up' },
+const COLUMNS: { id: OrderStatus; label: string; accent: string }[] = [
+  { id: 'PENDING', label: 'Pending', accent: '#FFD600' },
+  { id: 'PREPARING', label: 'Preparing', accent: '#00D4FF' },
+  { id: 'READY', label: 'Ready', accent: '#00FF88' },
+  { id: 'PICKED_UP', label: 'Picked Up', accent: '#FF3366' },
 ];
 
 export default function OrderKanban() {
@@ -29,7 +27,7 @@ export default function OrderKanban() {
       try {
         const token = storage.getAccessToken();
         if (!token) return;
-        const data = await api.getAdminOrders(token);
+        const data: any = await api.getAdminOrders(token);
         setOrders(data.orders || data);
       } catch (error) {
         console.error('Failed to fetch orders:', error);
@@ -84,18 +82,27 @@ export default function OrderKanban() {
   };
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-full">Loading orders...</div>;
+    return (
+      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-[#FFD600] border-t-transparent rounded-full animate-spin" />
+          <p className="text-white/60 font-medium">Loading orders...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="flex h-full gap-4 overflow-x-auto p-4 bg-gray-100 md:flex-row flex-col">
-      {COLUMNS.map(({ id, label }) => (
-        <div key={id} className="flex flex-col w-full md:w-80 shrink-0 bg-gray-200 rounded-lg p-3">
-          <h3 className="text-lg font-bold mb-4 px-2 text-gray-700 flex justify-between items-center">
+    <div className="flex h-full gap-4 overflow-x-auto p-4 bg-[#0A0A0F] md:flex-row flex-col">
+      {COLUMNS.map(({ id, label, accent }) => (
+        <div key={id} className="flex flex-col w-full md:w-80 shrink-0 glass rounded-xl p-3">
+          <h3 className="text-lg font-bold mb-4 px-2 flex justify-between items-center"
+          style={{ color: accent }}
+          >
             {label}
-            <span className="text-xs bg-gray-300 px-2 py-1 rounded-full">
+            <span className="text-xs bg-white/10 px-2 py-1 rounded-full text-white/60">
               {orders.filter((o) => o.status === id).length}
-            </span
+            </span>
           </h3>
           <div
             className="flex-1 overflow-y-auto space-y-3"
@@ -127,20 +134,20 @@ export default function OrderKanban() {
 
       {newOrderToast && (
         <div className="fixed bottom-4 right-4 z-[60] animate-in slide-in-from-bottom-full duration-300">
-          <div className="bg-orange-600 text-white p-4 rounded-xl shadow-2xl flex items-center gap-4 max-w-sm border-2 border-white/20">
-            <div className="p-2 bg-white/20 rounded-full">
-              <BellRing size={20} />
+          <div className="glass-elevated p-4 rounded-xl flex items-center gap-4 max-w-sm border border-[#FFD600]/20">
+            <div className="p-2 bg-[#FFD600]/10 rounded-full">
+              <BellRing size={20} className="text-[#FFD600]" />
             </div>
             <div className="flex-1">
-              <p className="font-bold">New Order Received!</p>
-              <p className="text-sm opacity-90">Order #{newOrderToast.id.slice(0, 8)} - {newOrderToast.totalAmount} FCFA</p>
+              <p className="font-bold text-white">New Order Received!</p>
+              <p className="text-sm text-white/60">Order #{newOrderToast.id.slice(0, 8)} - {newOrderToast.totalAmount} FCFA</p>
             </div>
             <button
               onClick={() => {
                 setSelectedOrder(newOrderToast);
                 setNewOrderToast(null);
               }}
-              className="px-3 py-1.5 bg-white text-orange-600 text-xs font-bold rounded-lg hover:bg-orange-50 transition-colors"
+              className="px-3 py-1.5 bg-[#FFD600] text-[#0A0A0F] text-xs font-bold rounded-lg hover:shadow-[0_0_20px_rgba(255,214,0,0.4)] transition-shadow"
             >
               View
             </button>
