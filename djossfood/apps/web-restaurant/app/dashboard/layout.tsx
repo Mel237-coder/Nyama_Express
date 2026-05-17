@@ -2,6 +2,7 @@
 
 import { useRouter, usePathname } from 'next/navigation';
 import { AuthGuard } from '@/components/auth/auth-guard';
+import { ConnectionBanner } from '@/components/connection-banner';
 import { RestaurantProvider } from '@/contexts/restaurant-context';
 import { useRestaurant } from '@/hooks/use-restaurant';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
@@ -67,6 +68,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   return (
     <RestaurantProvider restaurant={restaurant}>
       <div className="flex h-screen bg-background">
+        <ConnectionBanner />
         {/* Sidebar */}
         <aside className="flex w-60 flex-col bg-sidebar text-white">
           {/* Logo / Restaurant name */}
