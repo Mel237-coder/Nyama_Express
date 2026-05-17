@@ -25,8 +25,8 @@ export default function RestaurantDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState<Tab>('menu');
 
-  const { data: restaurant, isLoading: restaurantLoading } = useRestaurant(id);
-  const { data: menu, isLoading: menuLoading } = useRestaurantMenu(id);
+  const { data: restaurant, isLoading: restaurantLoading } = useRestaurant(id ?? null);
+  const { data: menu, isLoading: menuLoading } = useRestaurantMenu(id ?? null);
 
   const cartStore = useCartStore();
 

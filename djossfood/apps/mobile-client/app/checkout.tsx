@@ -16,10 +16,8 @@ import type { PaymentMethod } from '@djossfood/database';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import { Colors } from '../constants/colors';
-import { Spacing } from '../constants/spacing';
-import { BorderRadii } from '../constants/spacing';
-import { FontSizes } from '../../constants/typography';
-import { FontWeights } from '../../constants/typography';
+import { Spacing, BorderRadii } from '../constants/spacing';
+import { FontSizes, FontWeights } from '../constants/typography';
 
 const PHONE_REGEX = /^(\+237|237)?6\d{8}$/;
 
@@ -413,12 +411,11 @@ const styles = StyleSheet.create({
   upfrontRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: Spacing.sm,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
     marginTop: Spacing.xs,
     backgroundColor: '#E8F5E9',
     borderRadius: BorderRadii.sm,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
   },
   upfrontLabel: {
     fontSize: FontSizes.md,

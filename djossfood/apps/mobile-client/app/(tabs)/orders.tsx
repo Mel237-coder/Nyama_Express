@@ -11,11 +11,9 @@ import { router } from 'expo-router';
 import { useOrders } from '../../hooks/useOrders';
 import Badge from '../../components/ui/Badge';
 import { Colors } from '../../constants/colors';
-import { Spacing } from '../../constants/spacing';
-import { BorderRadii } from '../../constants/spacing';
-import { FontSizes } from '../../constants/typography';
-import { FontWeights } from '../../constants/typography';
-import type { OrderStatus } from '@djossfood/database';
+import { Spacing, BorderRadii } from '../../constants/spacing';
+import { FontSizes, FontWeights } from '../../constants/typography';
+import type { Order, OrderStatus } from '@djossfood/database';
 
 type BadgeVariant = 'success' | 'error' | 'warning' | 'info' | 'neutral';
 
@@ -56,8 +54,8 @@ export default function OrdersScreen() {
   }, []);
 
   const renderItem = useCallback(
-    ({ item }: { item: any }) => {
-      const statusConfig = STATUS_CONFIG[item.status] ?? {
+    ({ item }: { item: Order }) => {
+      const statusConfig = STATUS_CONFIG[item.status as OrderStatus] ?? {
         label: item.status,
         variant: 'neutral' as BadgeVariant,
       };

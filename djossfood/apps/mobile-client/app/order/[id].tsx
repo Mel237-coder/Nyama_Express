@@ -58,7 +58,7 @@ const DRIVER_ACTIVE_STATUSES: OrderStatus[] = [
 
 export default function OrderTrackingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data: fetchedOrder, isLoading, error } = useOrder(id);
+  const { data: fetchedOrder, isLoading, error } = useOrder(id ?? null);
   const confirmDelivery = useConfirmDelivery();
   const submitRating = useSubmitRating();
 
