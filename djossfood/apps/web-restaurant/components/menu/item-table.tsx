@@ -11,6 +11,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Pencil, Trash2 } from 'lucide-react';
+import Image from 'next/image';
 import { useUpdateMenuItem, useDeleteMenuItem } from '@/hooks/use-menu';
 import type { MenuItem } from '@djossfood/database';
 
@@ -69,9 +70,11 @@ export function ItemTable({ items, onEdit }: ItemTableProps) {
           >
             <TableCell>
               {item.image_url ? (
-                <img
+                <Image
                   src={item.image_url}
                   alt={item.name}
+                  width={40}
+                  height={40}
                   className="h-10 w-10 rounded object-cover"
                 />
               ) : (

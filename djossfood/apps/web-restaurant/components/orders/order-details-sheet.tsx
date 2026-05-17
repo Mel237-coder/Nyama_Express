@@ -7,7 +7,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
-import type { Order, OrderStatus } from '@djossfood/database';
+import type { Order, OrderItem, OrderStatus } from '@djossfood/database';
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
   pending: 'En attente',
@@ -55,8 +55,10 @@ const PAYMENT_METHODS: Record<string, string> = {
   mtn_mobile_money: 'MTN Mobile Money',
 };
 
+type OrderWithItems = Order & { order_items: OrderItem[] };
+
 interface OrderDetailsSheetProps {
-  order: Order & { order_items: any[] };
+  order: OrderWithItems;
   open: boolean;
   onClose: () => void;
 }
@@ -80,7 +82,7 @@ export function OrderDetailsSheet({ order, open, onClose }: OrderDetailsSheetPro
           <div>
             <h4 className="mb-2 text-sm font-semibold text-foreground">Articles</h4>
             <div className="space-y-2">
-              {order.order_items?.map((item: any) => (
+              {order.order_items?.map((item: OrderItem) => (
                 <div key={item.id} className="flex items-center justify-between rounded-lg bg-muted p-3">
                   <div>
                     <p className="text-sm font-medium text-foreground">{item.name}</p>

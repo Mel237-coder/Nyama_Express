@@ -26,7 +26,7 @@ import type { MenuItem } from '@djossfood/database';
 interface Category {
   id: string | null;
   name: string;
-  items: any[];
+  items: MenuItem[];
 }
 
 interface ItemModalProps {

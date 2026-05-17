@@ -13,6 +13,7 @@ import {
   LogOut,
   Bell,
 } from 'lucide-react';
+import Image from 'next/image';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Commandes', icon: ClipboardList },
@@ -74,9 +75,11 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
           {/* Logo / Restaurant name */}
           <div className="flex items-center gap-3 border-b border-white/10 p-4">
             {restaurant.logo_url ? (
-              <img
+              <Image
                 src={restaurant.logo_url}
                 alt={restaurant.name}
+                width={40}
+                height={40}
                 className="h-10 w-10 rounded-lg object-cover"
               />
             ) : (

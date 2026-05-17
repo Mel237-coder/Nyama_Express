@@ -5,7 +5,9 @@ import { useOrders, useConfirmOrder, useRejectOrder, useMarkReady } from '@/hook
 import { KanbanColumn } from './kanban-column';
 import { OrderCard } from './order-card';
 import { OrderDetailsSheet } from './order-details-sheet';
-import type { Order } from '@djossfood/database';
+import type { Order, OrderItem } from '@djossfood/database';
+
+type OrderWithItems = Order & { order_items: OrderItem[] };
 
 export function KanbanBoard() {
   const {
@@ -21,7 +23,7 @@ export function KanbanBoard() {
   const rejectOrder = useRejectOrder();
   const markReady = useMarkReady();
 
-  const [selectedOrder, setSelectedOrder] = useState<(Order & { order_items: any[] }) | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
 
   if (isLoading) {
     return (

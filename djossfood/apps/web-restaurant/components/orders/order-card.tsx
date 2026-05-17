@@ -4,14 +4,16 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Clock, X, Check, ChefHat } from 'lucide-react';
-import type { Order } from '@djossfood/database';
+import type { Order, OrderItem } from '@djossfood/database';
+
+type OrderWithItems = Order & { order_items: OrderItem[] };
 
 interface OrderCardProps {
-  order: Order & { order_items: any[] };
+  order: OrderWithItems;
   onConfirm?: (orderId: string) => void;
   onReject?: (orderId: string) => void;
   onMarkReady?: (orderId: string) => void;
-  onClick?: (order: Order & { order_items: any[] }) => void;
+  onClick?: (order: OrderWithItems) => void;
   isPending?: boolean;
 }
 

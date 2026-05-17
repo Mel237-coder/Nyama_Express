@@ -40,8 +40,9 @@ export function SettingsForm() {
 
       toast.success('Parametres enregistres');
       queryClient.invalidateQueries({ queryKey: ['restaurant'] });
-    } catch (err: any) {
-      toast.error(err?.response?.data?.error || "Erreur lors de l'enregistrement");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Erreur lors de l'enregistrement";
+      toast.error(message);
     } finally {
       setIsSaving(false);
     }

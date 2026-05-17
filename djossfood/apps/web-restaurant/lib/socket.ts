@@ -59,11 +59,13 @@ export function leaveRoom(room: string): void {
   s.emit('leave_room', room);
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function onEvent(event: string, callback: (...args: any[]) => void): void {
   const s = getSocket();
   s.on(event, callback);
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function offEvent(event: string, callback?: (...args: any[]) => void): void {
   const s = getSocket();
   s.off(event, callback);

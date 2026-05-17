@@ -11,7 +11,7 @@ import {
   getSocket,
 } from '@/lib/socket';
 import { useRestaurantContext } from '@/contexts/restaurant-context';
-import type { Order, OrderStatus } from '@djossfood/database';
+import type { Order, OrderItem, OrderStatus } from '@djossfood/database';
 
 const COMPLETED_STATUSES: OrderStatus[] = [
   'delivered',
@@ -20,8 +20,10 @@ const COMPLETED_STATUSES: OrderStatus[] = [
   'rejected',
 ];
 
+type OrderWithItems = Order & { order_items: OrderItem[] };
+
 interface OrdersResponse {
-  orders: (Order & { order_items: any[] })[];
+  orders: OrderWithItems[];
 }
 
 export function useOrders() {

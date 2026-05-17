@@ -21,12 +21,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Plus, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import { useCreateCategory, useUpdateCategory, useDeleteCategory } from '@/hooks/use-menu';
+import type { MenuItem } from '@djossfood/database';
 
 interface Category {
   id: string | null;
   name: string;
   description: string | null;
-  items: any[];
+  items: MenuItem[];
 }
 
 interface CategoryTabsProps {
