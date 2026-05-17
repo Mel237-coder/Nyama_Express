@@ -1,0 +1,82 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
+import express from 'express';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+import cors from 'cors';
+import { PORT } from './config/constants';
+import { errorHandler } from './middleware/errorHandler';
+import { registerOrderHandlers } from './sockets/orderSocket';
+import { registerDriverHandlers } from './sockets/driverSocket';
+import { startOrderTimeoutWorker } from './workers/orderTimeoutWorker';
+import { OrderService } from './services/orderService';
+import { PaymentService } from './services/paymentService';
+import { NotificationService } from './services/notificationService';
+import { TimeoutService } from './services/timeoutService';
+import { DriverMatchingService } from './services/driverMatchingService';
+import { RoutingService } from './services/routingService';
+import { apiRouter } from './routes';
+
+const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  },
+});
+
+// Dependency wiring
+const paymentService = new PaymentService();
+const notificationService = new NotificationService();
+const timeoutService = new TimeoutService();
+const driverMatchingService = new DriverMatchingService();
+const routingService = new RoutingService();
+
+const orderService = new OrderService(
+  paymentService,
+  notificationService,
+  timeoutService,
+  driverMatchingService,
+  routingService,
+  io,
+);
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Health check
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok', service: 'djossfood-api' });
+});
+
+// Routes
+app.use('/api', apiRouter);
+
+// Error handler
+app.use(errorHandler);
+
+// Socket.IO
+io.on('connection', (socket) => {
+  console.log(`[Socket] Connected: ${socket.id}`);
+
+  registerOrderHandlers(io, socket);
+  registerDriverHandlers(io, socket);
+
+  socket.on('disconnect', () => {
+    console.log(`[Socket] Disconnected: ${socket.id}`);
+  });
+});
+
+// Workers
+startOrderTimeoutWorker(orderService);
+
+// Start
+httpServer.listen(PORT, () => {
+  console.log(`[API] DjossFood API running on port ${PORT}`);
+  console.log(`[API] Socket.IO ready`);
+});
+
+export { app, io };

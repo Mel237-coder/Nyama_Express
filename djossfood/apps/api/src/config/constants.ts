@@ -1,0 +1,12 @@
+export const PORT = parseInt(process.env.PORT || '3001', 10);
+export const ORDER_TIMEOUT_MS = 5 * 60 * 1000;
+export const ORDER_TIMEOUT_CHECK_MS = 4.5 * 60 * 1000;
+export const DELIVERY_CONFIRM_TIMEOUT_MS = 15 * 60 * 1000;
+export const DRIVER_SEARCH_RADIUS_KM = 5;
+export const DRIVER_SEARCH_EXPANDED_RADIUS_KM = 10;
+export const DRIVER_SEARCH_TIMEOUT_MS = 2 * 60 * 1000;
+export const DRIVER_SEARCH_MAX_MS = 5 * 60 * 1000;
+export const PLATFORM_COMMISSION_RATE = 0.15;
+export const CAMEROON_PHONE_REGEX = /^\+2376\d{8}$/;
+export const UPFRONT_PERCENTAGE = 0.60;
+export const DELIVERY_PAYMENT_PERCENTAGE = 0.40;

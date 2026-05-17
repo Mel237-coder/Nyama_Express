@@ -1,0 +1,9 @@
+{
+  "extends": "@djossfood/config/tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "types": ["node", "jest"]
+  },
+  "include": ["src"]
+}
