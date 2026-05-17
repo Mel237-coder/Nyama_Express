@@ -7,6 +7,7 @@ import { driversRouter } from './drivers';
 import { paymentsRouter } from './payments';
 import { ratingsRouter } from './ratings';
 import { adminRouter } from './admin';
+import { restaurantOwnerRouter } from './restaurantOwner';
 
 const router = Router();
 
@@ -23,5 +24,8 @@ router.use('/ratings', ratingsRouter);
 
 // Admin routes (auth + role guard applied inside the router)
 router.use('/admin', adminRouter);
+
+// Restaurant owner routes (auth + role guard applied inside the router)
+router.use('/restaurant-owner', restaurantOwnerRouter);
 
 export const apiRouter = router;
