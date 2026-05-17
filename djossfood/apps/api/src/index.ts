@@ -8,7 +8,7 @@ import cors from 'cors';
 import { PORT } from './config/constants';
 import { errorHandler } from './middleware/errorHandler';
 import { registerOrderHandlers } from './sockets/orderSocket';
-import { registerDriverHandlers } from './sockets/driverSocket';
+import { registerDriverHandlers, setSocketServer } from './sockets/driverSocket';
 import { startOrderTimeoutWorker } from './workers/orderTimeoutWorker';
 import { OrderService } from './services/orderService';
 import { PaymentService } from './services/paymentService';
@@ -26,6 +26,9 @@ const io = new Server(httpServer, {
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
   },
 });
+
+// Store Socket.IO server instance for targeted emissions (e.g. delivery requests)
+setSocketServer(io);
 
 // Dependency wiring
 const paymentService = new PaymentService();
