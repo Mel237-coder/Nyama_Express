@@ -9,9 +9,11 @@ interface AuthState {
   driver: Driver | null;
   isAuthenticated: boolean;
   isApproved: boolean;
+  isNewUser: boolean;
   setSession: (session: any) => void;
   setProfile: (profile: Profile | null) => void;
   setDriver: (driver: Driver | null) => void;
+  setIsNewUser: (isNewUser: boolean) => void;
   signOut: () => void;
 }
 
@@ -23,6 +25,7 @@ export const useAuthStore = create<AuthState>()(
       driver: null,
       isAuthenticated: false,
       isApproved: false,
+      isNewUser: false,
 
       setSession: (session) =>
         set({
@@ -38,6 +41,8 @@ export const useAuthStore = create<AuthState>()(
           isApproved: !!driver?.is_approved,
         }),
 
+      setIsNewUser: (isNewUser) => set({ isNewUser }),
+
       signOut: () =>
         set({
           session: null,
@@ -45,6 +50,7 @@ export const useAuthStore = create<AuthState>()(
           driver: null,
           isAuthenticated: false,
           isApproved: false,
+          isNewUser: false,
         }),
     }),
     {
@@ -56,6 +62,7 @@ export const useAuthStore = create<AuthState>()(
         driver: state.driver,
         isAuthenticated: state.isAuthenticated,
         isApproved: state.isApproved,
+        isNewUser: state.isNewUser,
       }),
     },
   ),
