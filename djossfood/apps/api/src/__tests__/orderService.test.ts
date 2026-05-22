@@ -539,7 +539,7 @@ describe('OrderService', () => {
     it('should throw when restaurant owner does not match', async () => {
       await expect(
         service.restaurantConfirmOrder('order-1', 'wrong-owner-id'),
-      ).rejects.toThrow('proprietaire');
+      ).rejects.toThrow('Permission refusee');
     });
 
     it('should throw when order is no longer pending', async () => {
@@ -575,7 +575,17 @@ describe('OrderService', () => {
         data: {
           id: 'order-1',
           client_id: 'client-1',
+          restaurant_id: 'restaurant-1',
           payment_ref_upfront: 'payment-ref-1',
+        },
+        error: null,
+      });
+
+      mockSupabase.setupChain('restaurants').forSelect().withSingleResult({
+        data: {
+          id: 'restaurant-1',
+          owner_id: 'owner-1',
+          name: 'Restaurant Le Wouri',
         },
         error: null,
       });
@@ -585,7 +595,7 @@ describe('OrderService', () => {
     });
 
     it('should update status to rejected, refund upfront payment, and notify client', async () => {
-      await service.restaurantRejectOrder('order-1', 'Produits indisponibles');
+      await service.restaurantRejectOrder('order-1', 'Produits indisponibles', 'owner-1');
 
       expect(mockPayment.refundPayment).toHaveBeenCalledWith('payment-ref-1');
       expect(mockNotification.templates.order_rejected_manual).toHaveBeenCalledWith('Produits indisponibles');
@@ -620,6 +630,7 @@ describe('OrderService', () => {
       mockSupabase.setupChain('restaurants').forSelect().withSingleResult({
         data: {
           id: 'restaurant-1',
+          owner_id: 'owner-1',
           location: { type: 'Point', coordinates: [9.7679, 4.0511] },
           name: 'Restaurant Le Wouri',
         },
@@ -630,7 +641,7 @@ describe('OrderService', () => {
     });
 
     it('should update status to ready and start driver search', async () => {
-      await service.restaurantMarkReady('order-1');
+      await service.restaurantMarkReady('order-1', 'owner-1');
 
       expect(mockDriverMatching.findDriver).toHaveBeenCalledWith(
         'order-1',

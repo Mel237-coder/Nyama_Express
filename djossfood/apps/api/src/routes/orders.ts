@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { roleGuard } from '../middleware/roleGuard';
+import { requireOrderOwnerOrAdmin } from '../middleware/ownership';
 import { OrderService } from '../services/orderService';
 import { PaymentService } from '../services/paymentService';
 import { NotificationService } from '../services/notificationService';
@@ -89,7 +90,11 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 });
 
 // POST /api/orders/:id/confirm - Restaurant confirms order
-router.post('/:id/confirm', async (req: AuthRequest, res: Response) => {
+router.post('/:id/confirm', requireOrderOwnerOrAdmin, async (req: AuthRequest, res: Response) => {
+  const ownership = (req as any).orderOwnership;
+  if (!ownership?.isRestaurantOwner && req.userRole !== 'admin') {
+    return res.status(403).json({ error: 'Permission refusee: seul le proprietaire du restaurant peut confirmer' });
+  }
   const { id } = req.params;
 
   try {
@@ -103,7 +108,11 @@ router.post('/:id/confirm', async (req: AuthRequest, res: Response) => {
 });
 
 // POST /api/orders/:id/reject - Restaurant rejects order
-router.post('/:id/reject', async (req: AuthRequest, res: Response) => {
+router.post('/:id/reject', requireOrderOwnerOrAdmin, async (req: AuthRequest, res: Response) => {
+  const ownership = (req as any).orderOwnership;
+  if (!ownership?.isRestaurantOwner && req.userRole !== 'admin') {
+    return res.status(403).json({ error: 'Permission refusee: seul le proprietaire du restaurant peut rejeter' });
+  }
   const { id } = req.params;
   const { reason } = req.body;
 
@@ -113,7 +122,7 @@ router.post('/:id/reject', async (req: AuthRequest, res: Response) => {
 
   try {
     const orderService = createOrderService();
-    await orderService.restaurantRejectOrder(id, reason);
+    await orderService.restaurantRejectOrder(id, reason, req.userId!);
     return res.json({ message: 'Commande refusee' });
   } catch (err: any) {
     console.error('Reject order error:', err.message);
@@ -122,12 +131,16 @@ router.post('/:id/reject', async (req: AuthRequest, res: Response) => {
 });
 
 // POST /api/orders/:id/ready - Restaurant marks order ready
-router.post('/:id/ready', async (req: AuthRequest, res: Response) => {
+router.post('/:id/ready', requireOrderOwnerOrAdmin, async (req: AuthRequest, res: Response) => {
+  const ownership = (req as any).orderOwnership;
+  if (!ownership?.isRestaurantOwner && req.userRole !== 'admin') {
+    return res.status(403).json({ error: 'Permission refusee: seul le proprietaire du restaurant peut marquer pret' });
+  }
   const { id } = req.params;
 
   try {
     const orderService = createOrderService();
-    await orderService.restaurantMarkReady(id);
+    await orderService.restaurantMarkReady(id, req.userId!);
     return res.json({ message: 'Commande prete' });
   } catch (err: any) {
     console.error('Mark ready error:', err.message);
@@ -136,7 +149,11 @@ router.post('/:id/ready', async (req: AuthRequest, res: Response) => {
 });
 
 // POST /api/orders/:id/accept - Driver accepts delivery
-router.post('/:id/accept', async (req: AuthRequest, res: Response) => {
+router.post('/:id/accept', requireOrderOwnerOrAdmin, async (req: AuthRequest, res: Response) => {
+  const ownership = (req as any).orderOwnership;
+  if (!ownership?.isDriver && req.userRole !== 'admin') {
+    return res.status(403).json({ error: 'Permission refusee: seul un livreur peut accepter' });
+  }
   const { id } = req.params;
 
   try {
@@ -150,7 +167,11 @@ router.post('/:id/accept', async (req: AuthRequest, res: Response) => {
 });
 
 // POST /api/orders/:id/pickup - Driver picks up order
-router.post('/:id/pickup', async (req: AuthRequest, res: Response) => {
+router.post('/:id/pickup', requireOrderOwnerOrAdmin, async (req: AuthRequest, res: Response) => {
+  const ownership = (req as any).orderOwnership;
+  if (!ownership?.isDriver && req.userRole !== 'admin') {
+    return res.status(403).json({ error: 'Permission refusee: seul le livreur assigne peut recuperer' });
+  }
   const { id } = req.params;
 
   try {
@@ -164,7 +185,11 @@ router.post('/:id/pickup', async (req: AuthRequest, res: Response) => {
 });
 
 // POST /api/orders/:id/deliver - Driver marks delivered
-router.post('/:id/deliver', async (req: AuthRequest, res: Response) => {
+router.post('/:id/deliver', requireOrderOwnerOrAdmin, async (req: AuthRequest, res: Response) => {
+  const ownership = (req as any).orderOwnership;
+  if (!ownership?.isDriver && req.userRole !== 'admin') {
+    return res.status(403).json({ error: 'Permission refusee: seul le livreur assigne peut livrer' });
+  }
   const { id } = req.params;
 
   try {
@@ -178,7 +203,11 @@ router.post('/:id/deliver', async (req: AuthRequest, res: Response) => {
 });
 
 // POST /api/orders/:id/confirm-delivery - Client confirms delivery
-router.post('/:id/confirm-delivery', async (req: AuthRequest, res: Response) => {
+router.post('/:id/confirm-delivery', requireOrderOwnerOrAdmin, async (req: AuthRequest, res: Response) => {
+  const ownership = (req as any).orderOwnership;
+  if (!ownership?.isClient && req.userRole !== 'admin') {
+    return res.status(403).json({ error: 'Permission refusee: seul le client peut confirmer la livraison' });
+  }
   const { id } = req.params;
 
   try {

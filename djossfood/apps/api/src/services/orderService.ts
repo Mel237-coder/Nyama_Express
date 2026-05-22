@@ -293,11 +293,22 @@ export class OrderService {
     });
   }
 
+  private async verifyRestaurantOwnership(orderId: string, userId: string): Promise<void> {
+    const { data: order } = await this.supabase.from('orders').select('restaurant_id').eq('id', orderId).single();
+    if (!order) throw new Error('Commande non trouvee');
+    const { data: restaurant } = await this.supabase.from('restaurants').select('owner_id').eq('id', (order as any).restaurant_id).single();
+    if (!restaurant || (restaurant as any).owner_id !== userId) {
+      throw new Error('Permission refusee');
+    }
+  }
+
   // =======================================================================
   // 3. restaurantConfirmOrder
   // =======================================================================
 
   async restaurantConfirmOrder(orderId: string, restaurantOwnerId: string): Promise<void> {
+    await this.verifyRestaurantOwnership(orderId, restaurantOwnerId);
+
     // Fetch the order
     const { data: order, error: orderError } = await this.supabase
       .from('orders')
@@ -309,7 +320,7 @@ export class OrderService {
       throw new Error('Commande non trouvee');
     }
 
-    // Fetch the restaurant to verify ownership
+    // Fetch the restaurant for notifications
     const { data: restaurant, error: restError } = await this.supabase
       .from('restaurants')
       .select('id, owner_id, name')
@@ -318,10 +329,6 @@ export class OrderService {
 
     if (restError || !restaurant) {
       throw new Error('Restaurant non trouve');
-    }
-
-    if ((restaurant as any).owner_id !== restaurantOwnerId) {
-      throw new Error('Vous n\'etes pas le proprietaire de ce restaurant');
     }
 
     if ((order as any).status !== 'pending') {
@@ -373,7 +380,9 @@ export class OrderService {
   // 4. restaurantRejectOrder
   // =======================================================================
 
-  async restaurantRejectOrder(orderId: string, reason: string): Promise<void> {
+  async restaurantRejectOrder(orderId: string, reason: string, restaurantOwnerId: string): Promise<void> {
+    await this.verifyRestaurantOwnership(orderId, restaurantOwnerId);
+
     // Update status to rejected
     await this.supabase
       .from('orders')
@@ -417,7 +426,9 @@ export class OrderService {
   // 5. restaurantMarkReady
   // =======================================================================
 
-  async restaurantMarkReady(orderId: string): Promise<void> {
+  async restaurantMarkReady(orderId: string, restaurantOwnerId: string): Promise<void> {
+    await this.verifyRestaurantOwnership(orderId, restaurantOwnerId);
+
     await this.supabase
       .from('orders')
       .update({
@@ -812,23 +823,18 @@ export class OrderService {
           .eq('id', userId);
       }
     } else {
-      // For restaurants, we store the wallet on the restaurant row (or a wallets table)
-      // Using the restaurants table – no wallet_balance column in schema,
-      // so we use a simple update. If there's no wallet column, we'll handle it gracefully.
-      // For now, we'll credit via the payment_transactions table as a ledger entry.
-      // This is a placeholder – the actual implementation depends on whether restaurants
-      // have a wallet_balance column.
-      try {
-        await this.supabase.from('payment_transactions').insert({
-          order_id: null, // Not tied to a specific payment
-          amount,
-          payment_method: 'internal',
-          payment_status: 'completed',
-          phone: null,
-          provider_response: { type: 'wallet_credit', role, user_id: userId },
-        });
-      } catch {
-        console.error(`Failed to credit ${role} wallet for user ${userId}`);
+      // For restaurants, credit the wallet_balance on the restaurants table
+      const { data: restaurant } = await this.supabase
+        .from('restaurants')
+        .select('wallet_balance')
+        .eq('id', userId)
+        .single();
+
+      if (restaurant) {
+        await this.supabase
+          .from('restaurants')
+          .update({ wallet_balance: ((restaurant as any).wallet_balance || 0) + amount })
+          .eq('id', userId);
       }
     }
   }
