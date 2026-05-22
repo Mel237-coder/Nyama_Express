@@ -1,10 +1,13 @@
 import { Router, Request, Response } from 'express';
-import { getSupabaseClient } from '../config/supabase';
+import { getSupabaseClient, getSupabaseAdmin } from '../config/supabase';
+import { rateLimitMiddleware } from '../middleware/rateLimit';
 
 const router = Router();
 
+const otpRateLimit = rateLimitMiddleware({ keyPrefix: 'otp', maxRequests: 5, windowMs: 15 * 60 * 1000 });
+
 // POST /api/auth/send-otp
-router.post('/send-otp', async (req: Request, res: Response) => {
+router.post('/send-otp', otpRateLimit, async (req: Request, res: Response) => {
   const { phone } = req.body;
 
   if (!phone) {
@@ -70,6 +73,47 @@ router.post('/verify-otp', async (req: Request, res: Response) => {
     });
   } catch (err: any) {
     return res.status(500).json({ error: 'Erreur lors de la verification de l\'OTP' });
+  }
+});
+
+// POST /api/auth/admin-signup — protected by secret header
+router.post('/admin-signup', async (req: Request, res: Response) => {
+  const adminSecret = process.env.ADMIN_SIGNUP_SECRET;
+  const providedSecret = req.headers['x-admin-signup-secret'];
+
+  if (!adminSecret || providedSecret !== adminSecret) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  const { email, password, full_name } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email et mot de passe requis' });
+  }
+
+  try {
+    const supabase = getSupabaseAdmin();
+
+    const { data, error } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        role: 'admin',
+        full_name: full_name || 'Admin',
+      },
+    });
+
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    return res.status(201).json({
+      message: 'Compte administrateur cree avec succes',
+      user: data.user,
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: 'Erreur lors de la creation du compte admin' });
   }
 });
 
