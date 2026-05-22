@@ -15,13 +15,15 @@ export interface RateLimitOptions {
 
 export function rateLimitMiddleware(options: RateLimitOptions) {
   return async (req: Request, res: Response, next: NextFunction) => {
-    const key = `${options.keyPrefix}:${req.ip}`;
+    const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+    const key = `${options.keyPrefix}:${ip}`;
     try {
       const current = await redis.incr(key);
       if (current === 1) {
         await redis.pexpire(key, options.windowMs);
       }
       if (current > options.maxRequests) {
+        res.setHeader('Retry-After', String(Math.ceil(options.windowMs / 1000)));
         return res.status(429).json({ error: 'Too many requests' });
       }
       next();
