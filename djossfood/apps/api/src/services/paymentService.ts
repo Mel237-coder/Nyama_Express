@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import axios from 'axios';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseAdmin } from '../config/supabase';
@@ -163,17 +164,45 @@ export class PaymentService {
   }
 
   /**
+   * Verify webhook signature using HMAC-SHA256.
+   * Compares in constant-time to prevent timing attacks.
+   */
+  private verifyWebhookSignature(rawBody: string, signature: string | undefined): boolean {
+    if (!signature) {
+      return false;
+    }
+
+    const secret = process.env.CAMPAY_WEBHOOK_SECRET;
+    if (!secret) {
+      console.error('CAMPAY_WEBHOOK_SECRET is not configured');
+      return false;
+    }
+
+    const expected = crypto
+      .createHmac('sha256', secret)
+      .update(rawBody)
+      .digest('hex');
+
+    if (expected.length !== signature.length) {
+      return false;
+    }
+
+    return crypto.timingSafeEqual(
+      Buffer.from(expected, 'utf8'),
+      Buffer.from(signature, 'utf8'),
+    );
+  }
+
+  /**
    * Handle incoming webhook from Campay for payment status updates.
    * Verifies the webhook payload, finds the corresponding transaction,
    * updates the transaction status, and updates the order's payment_status.
    */
-  async handlePaymentWebhook(payload: any): Promise<WebhookResult> {
-    // Placeholder for HMAC verification
-    // In production, verify the webhook signature here
-    // const signature = payload.signature;
-    // if (!this.verifyWebhookSignature(payload, signature)) {
-    //   return { success: false, message: 'Invalid webhook signature' };
-    // }
+  async handlePaymentWebhook(payload: any, signature?: string): Promise<WebhookResult> {
+    const rawBody = JSON.stringify(payload);
+    if (!this.verifyWebhookSignature(rawBody, signature)) {
+      return { success: false, message: 'Invalid webhook signature' };
+    }
 
     const externalReference = payload.external_reference;
     const status = payload.status;
@@ -233,26 +262,22 @@ export class PaymentService {
 
   /**
    * Refund a completed payment via Campay's refund endpoint.
-   * Fetches the transaction details from the DB, calls the refund API,
-   * and updates the transaction status accordingly.
+   * @param reference — the Campay transaction reference string (e.g. 'CPY-12345')
    */
-  async refundPayment(transactionId: string): Promise<boolean> {
+  async refundPayment(reference: string): Promise<boolean> {
     try {
-      // Get transaction details
       const { data: transaction, error: txError } = await this.supabase
         .from('payment_transactions')
         .select('*')
-        .eq('id', transactionId)
+        .eq('reference', reference)
         .single();
 
       if (txError || !transaction) {
-        console.error('Transaction not found for refund:', transactionId);
+        console.error('Transaction not found for refund reference:', reference);
         return false;
       }
 
       const token = await this.getToken();
-
-      // Call Campay refund endpoint
       const from = transaction.phone_number.replace(/^\+/, '');
       const response = await axios.post(
         `${this.baseUrl}/refund/`,
@@ -271,44 +296,20 @@ export class PaymentService {
       );
 
       if (response.data && response.data.status === 'REFUNDED') {
-        // Update transaction status to refunded
         await this.supabase
           .from('payment_transactions')
-          .update({
-            status: 'refunded',
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', transactionId);
-
+          .update({ status: 'refunded', updated_at: new Date().toISOString() })
+          .eq('id', transaction.id);
         return true;
       }
 
-      // Refund was not successful
       await this.supabase
         .from('payment_transactions')
-        .update({
-          status: 'failed',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', transactionId);
-
+        .update({ status: 'failed', updated_at: new Date().toISOString() })
+        .eq('id', transaction.id);
       return false;
     } catch (error: any) {
       console.error('Refund failed:', error.message);
-
-      // Update transaction status to failed
-      try {
-        await this.supabase
-          .from('payment_transactions')
-          .update({
-            status: 'failed',
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', transactionId);
-      } catch {
-        // Ignore DB update errors during failure handling
-      }
-
       return false;
     }
   }

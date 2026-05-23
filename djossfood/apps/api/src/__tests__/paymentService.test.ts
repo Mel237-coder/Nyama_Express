@@ -1,8 +1,18 @@
+import crypto from 'crypto';
 import axios from 'axios';
 import { PaymentService } from '../services/paymentService';
 
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
+
+const WEBHOOK_SECRET = 'test-webhook-secret';
+
+function signPayload(payload: Record<string, any>): string {
+  return crypto
+    .createHmac('sha256', WEBHOOK_SECRET)
+    .update(JSON.stringify(payload))
+    .digest('hex');
+}
 
 /**
  * Create a mock Supabase client that properly handles all chaining patterns.
@@ -114,11 +124,13 @@ describe('PaymentService', () => {
     // Set required env vars for getToken
     process.env.CAMPAY_USERNAME = 'test-user';
     process.env.CAMPAY_PASSWORD = 'test-pass';
+    process.env.CAMPAY_WEBHOOK_SECRET = WEBHOOK_SECRET;
   });
 
   afterEach(() => {
     delete process.env.CAMPAY_USERNAME;
     delete process.env.CAMPAY_PASSWORD;
+    delete process.env.CAMPAY_WEBHOOK_SECRET;
   });
 
   // ─── initiatePayment ─────────────────────────────────────────────────────
@@ -241,6 +253,7 @@ describe('PaymentService', () => {
         status: 'SUCCESSFUL',
         reference: 'CPY-12345',
       };
+      const signature = signPayload(payload);
 
       mockSupabase.setupChain('payment_transactions')
         .forSelect()
@@ -262,7 +275,7 @@ describe('PaymentService', () => {
         .forUpdate({ payment_status: 'partial' })
         .withEqResult({ data: {}, error: null });
 
-      const result = await service.handlePaymentWebhook(payload);
+      const result = await service.handlePaymentWebhook(payload, signature);
 
       expect(result.success).toBe(true);
       expect(mockSupabase.client.from).toHaveBeenCalledWith('payment_transactions');
@@ -275,6 +288,7 @@ describe('PaymentService', () => {
         status: 'SUCCESSFUL',
         reference: 'CPY-99999',
       };
+      const signature = signPayload(payload);
 
       mockSupabase.setupChain('payment_transactions')
         .forSelect()
@@ -296,7 +310,7 @@ describe('PaymentService', () => {
         .forUpdate({ payment_status: 'partial' })
         .withEqResult({ data: {}, error: null });
 
-      const result = await service.handlePaymentWebhook(payload);
+      const result = await service.handlePaymentWebhook(payload, signature);
 
       expect(result.success).toBe(true);
 
@@ -315,6 +329,7 @@ describe('PaymentService', () => {
         status: 'FAILED',
         reference: 'CPY-FAIL',
       };
+      const signature = signPayload(payload);
 
       mockSupabase.setupChain('payment_transactions')
         .forSelect()
@@ -336,7 +351,7 @@ describe('PaymentService', () => {
         .forUpdate({ payment_status: 'failed' })
         .withEqResult({ data: {}, error: null });
 
-      const result = await service.handlePaymentWebhook(payload);
+      const result = await service.handlePaymentWebhook(payload, signature);
 
       expect(result.success).toBe(true);
 
@@ -355,6 +370,7 @@ describe('PaymentService', () => {
         status: 'SUCCESSFUL',
         reference: 'CPY-NOPE',
       };
+      const signature = signPayload(payload);
 
       mockSupabase.setupChain('payment_transactions')
         .forSelect()
@@ -363,13 +379,61 @@ describe('PaymentService', () => {
           error: { message: 'Not found' },
         });
 
+      const result = await service.handlePaymentWebhook(payload, signature);
+
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject webhook without valid signature', async () => {
+      const payload = {
+        external_reference: 'order-1234',
+        status: 'SUCCESSFUL',
+        reference: 'CPY-12345',
+      };
+
       const result = await service.handlePaymentWebhook(payload);
 
       expect(result.success).toBe(false);
+      expect(result.message).toContain('signature');
     });
   });
 
   // ─── refundPayment ────────────────────────────────────────────────────────
+
+  describe('refundPayment by reference', () => {
+    it('should refund when given a Campay reference string', async () => {
+      mockSupabase.setupChain('payment_transactions')
+        .forSelect()
+        .withSingleResult({
+          data: {
+            id: 'tx-1',
+            reference: 'CPY-12345',
+            amount: 5000,
+            phone_number: '+237612345678',
+            status: 'successful',
+          },
+          error: null,
+        });
+
+      mockSupabase.setupChain('payment_transactions')
+        .forUpdate({ status: 'refunded' })
+        .withEqResult({ data: {}, error: null });
+
+      mockedAxios.post
+        .mockResolvedValueOnce({ data: { token: 'test-campay-token' } })
+        .mockResolvedValueOnce({ data: { status: 'REFUNDED', reference: 'CPY-12345' } });
+
+      const result = await service.refundPayment('CPY-12345');
+
+      expect(result).toBe(true);
+      expect(mockSupabase.client.from).toHaveBeenCalledWith('payment_transactions');
+
+      const txChains = mockSupabase.chains['payment_transactions'] || [];
+      const selectChain = txChains.find((c: any) => c.select.mock.calls.length > 0);
+      expect(selectChain).toBeDefined();
+      expect(selectChain.eq).toHaveBeenCalledWith('reference', 'CPY-12345');
+    });
+  });
 
   describe('refundPayment', () => {
     it('should initiate refund and update transaction status', async () => {
@@ -395,7 +459,7 @@ describe('PaymentService', () => {
         .mockResolvedValueOnce({ data: { token: 'test-campay-token' } })
         .mockResolvedValueOnce({ data: { status: 'REFUNDED', reference: 'CPY-REF-1' } });
 
-      const result = await service.refundPayment('txn-refund-1');
+      const result = await service.refundPayment('CPY-REF');
 
       expect(result).toBe(true);
       expect(mockedAxios.post).toHaveBeenCalled();
@@ -428,7 +492,7 @@ describe('PaymentService', () => {
         .mockResolvedValueOnce({ data: { token: 'test-campay-token' } })
         .mockRejectedValueOnce(new Error('Refund failed'));
 
-      const result = await service.refundPayment('txn-refund-2');
+      const result = await service.refundPayment('CPY-REF-FAIL');
 
       expect(result).toBe(false);
     });
@@ -441,7 +505,7 @@ describe('PaymentService', () => {
           error: { message: 'Not found' },
         });
 
-      const result = await service.refundPayment('nonexistent-txn');
+      const result = await service.refundPayment('NONEXISTENT-REF');
 
       expect(result).toBe(false);
     });
