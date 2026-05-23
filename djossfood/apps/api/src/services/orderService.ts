@@ -760,19 +760,7 @@ export class OrderService {
           .update({ status: 'available' })
           .eq('id', (order as any).driver_id);
 
-        // Increment driver total_deliveries (read-increment-write)
-        const { data: driverData } = await this.supabase
-          .from('drivers')
-          .select('total_deliveries')
-          .eq('id', (order as any).driver_id)
-          .single();
-
-        if (driverData) {
-          await this.supabase
-            .from('drivers')
-            .update({ total_deliveries: ((driverData as any).total_deliveries || 0) + 1 })
-            .eq('id', (order as any).driver_id);
-        }
+        await this.creditDriverStats((order as any).driver_id);
       }
 
       // Send rating notification
@@ -809,34 +797,14 @@ export class OrderService {
 
   private async creditWallet(userId: string, role: 'restaurant' | 'driver', amount: number): Promise<void> {
     if (role === 'driver') {
-      // For drivers, credit the wallet_balance on the drivers table
-      const { data: driver } = await this.supabase
-        .from('drivers')
-        .select('wallet_balance')
-        .eq('id', userId)
-        .single();
-
-      if (driver) {
-        await this.supabase
-          .from('drivers')
-          .update({ wallet_balance: ((driver as any).wallet_balance || 0) + amount })
-          .eq('id', userId);
-      }
+      await this.supabase.rpc('increment_wallet_balance', { p_user_id: userId, p_amount: amount });
     } else {
-      // For restaurants, credit the wallet_balance on the restaurants table
-      const { data: restaurant } = await this.supabase
-        .from('restaurants')
-        .select('wallet_balance')
-        .eq('id', userId)
-        .single();
-
-      if (restaurant) {
-        await this.supabase
-          .from('restaurants')
-          .update({ wallet_balance: ((restaurant as any).wallet_balance || 0) + amount })
-          .eq('id', userId);
-      }
+      await this.supabase.rpc('increment_restaurant_wallet_balance', { p_restaurant_id: userId, p_amount: amount });
     }
+  }
+
+  private async creditDriverStats(driverId: string): Promise<void> {
+    await this.supabase.rpc('increment_driver_deliveries', { p_driver_id: driverId });
   }
 
   private extractLocation(location: any): { lat: number; lng: number } {

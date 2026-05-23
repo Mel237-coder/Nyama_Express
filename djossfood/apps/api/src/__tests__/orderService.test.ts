@@ -101,8 +101,10 @@ function createMockSupabase() {
     return chain;
   });
 
+  const rpc = jest.fn(() => Promise.resolve({ data: null, error: null }));
+
   return {
-    client: { from },
+    client: { from, rpc },
     setupChain,
     configs: tableConfigs,
   };
