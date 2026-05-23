@@ -953,6 +953,27 @@ describe('OrderService', () => {
         }),
       );
     });
+
+    it('Auto-confirm: should allow system override and not throw when clientId is system', async () => {
+      // Override the order to have a different client_id
+      mockSupabase.setupChain('orders').forSelect().withSingleResult({
+        data: {
+          id: 'order-1',
+          client_id: 'client-456',
+          restaurant_id: 'restaurant-1',
+          driver_id: 'driver-1',
+          total_amount: 7000,
+          amount_paid_upfront: 4200,
+          subtotal: 6500,
+          delivery_fee: 500,
+          payment_phone: '+237612345678',
+          payment_method: 'mobile_money',
+        },
+        error: null,
+      });
+
+      await expect(service.clientConfirmDelivery('order-1', 'system')).resolves.not.toThrow();
+    });
   });
 
   // =======================================================================

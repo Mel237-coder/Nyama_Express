@@ -702,7 +702,8 @@ export class OrderService {
       throw new Error('Commande non trouvee');
     }
 
-    if ((order as any).client_id !== clientId) {
+    const isSystem = clientId === 'system';
+    if (!isSystem && (order as any).client_id !== clientId) {
       throw new Error('Vous n\'etes pas le client de cette commande');
     }
 
