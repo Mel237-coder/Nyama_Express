@@ -241,7 +241,11 @@ export class PaymentService {
       // Update order payment_status
       if (transaction.order_id) {
         const newPaymentStatus =
-          status === 'SUCCESSFUL' ? 'partial' : 'failed';
+          status === 'SUCCESSFUL'
+            ? transaction.type === 'delivery'
+              ? 'completed'
+              : 'partial'
+            : 'failed';
         await this.supabase
           .from('orders')
           .update({ payment_status: newPaymentStatus })
