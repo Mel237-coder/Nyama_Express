@@ -17,6 +17,7 @@ import { TimeoutService } from './services/timeoutService';
 import { DriverMatchingService } from './services/driverMatchingService';
 import { RoutingService } from './services/routingService';
 import { apiRouter } from './routes';
+import { getSupabaseClient } from './config/supabase';
 
 const app = express();
 const httpServer = createServer(app);
@@ -29,6 +30,26 @@ const io = new Server(httpServer, {
 
 // Store Socket.IO server instance for targeted emissions (e.g. delivery requests)
 setSocketServer(io);
+
+// Socket.IO authentication middleware
+io.use(async (socket, next) => {
+  const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
+  if (!token) {
+    return next(new Error('Authentication error: token required'));
+  }
+  try {
+    const supabase = getSupabaseClient(token);
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) {
+      return next(new Error('Authentication error: invalid token'));
+    }
+    socket.data.userId = user.id;
+    socket.data.userRole = user.user_metadata?.role || 'client';
+    next();
+  } catch {
+    next(new Error('Authentication error'));
+  }
+});
 
 // Dependency wiring
 const paymentService = new PaymentService();

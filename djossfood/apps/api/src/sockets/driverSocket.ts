@@ -38,22 +38,29 @@ export function emitDeliveryRequest(
 export function registerDriverHandlers(io: Server, socket: Socket) {
   // Driver sends GPS location update
   socket.on('driver_location_update', async (data: {
-    driver_id: string;
     lat: number;
     lng: number;
   }) => {
+    const driverId = socket.data.userId;
+    const userRole = socket.data.userRole;
+
+    if (userRole !== 'driver') {
+      socket.emit('error', { message: 'Only drivers can update location' });
+      return;
+    }
+
     const supabase = getSupabaseAdmin();
     await supabase
       .from('drivers')
       .update({
-        current_location: `SRID=4326;POINT(${data.lng},${data.lat})`,
+        current_location: `SRID=4326;POINT(${data.lng} ${data.lat})`,
         current_location_updated_at: new Date().toISOString(),
       })
-      .eq('id', data.driver_id);
+      .eq('id', driverId);
 
-    // Broadcast to any active order tracking rooms
-    socket.broadcast.emit('driver_location', {
-      driver_id: data.driver_id,
+    // Emit only to the driver themselves for confirmation, not global broadcast
+    socket.emit('driver_location_ack', {
+      driver_id: driverId,
       lat: data.lat,
       lng: data.lng,
       timestamp: new Date().toISOString(),
