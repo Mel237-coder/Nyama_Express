@@ -1,60 +1,32 @@
-import Queue from 'bull';
+import { orderQueue } from '../services/timeoutService';
 import { DriverMatchingService } from '../services/driverMatchingService';
-import { NotificationService } from '../services/notificationService';
-import { getSupabaseAdmin } from '../config/supabase';
-import {
-  DRIVER_SEARCH_TIMEOUT_MS,
-  DRIVER_SEARCH_MAX_MS,
-} from '../config/constants';
 
-const driverSearchQueue = new Queue(
-  'driver-search',
-  process.env.REDIS_URL || 'redis://localhost:6379',
-);
-
-export function startDriverSearchWorker() {
-  const matching = new DriverMatchingService();
-  const notifications = new NotificationService();
-  const supabase = getSupabaseAdmin();
-
-  driverSearchQueue.process('find-driver', async (job) => {
+export function startDriverSearchWorker(driverMatchingService: DriverMatchingService) {
+  // Initial search — notify closest driver immediately
+  orderQueue.process('driver-search', async (job) => {
     const { orderId, restaurantId } = job.data;
-
-    // Phase 1: search 5km radius
-    let driver = await matching.findDriver(orderId, restaurantId);
-
-    if (!driver) {
-      // Wait 2 min, then expand to 10km
-      await new Promise((r) => setTimeout(r, DRIVER_SEARCH_TIMEOUT_MS));
-      driver = await matching.expandSearch(orderId, restaurantId);
+    const driver = await driverMatchingService.findDriver(orderId, restaurantId);
+    if (driver) {
+      return; // Driver found and notified
     }
+    // No driver found — schedule expanded search after 2 minutes
+    await orderQueue.add('expand-driver-search', { orderId, restaurantId }, { delay: 120_000 });
+  });
 
+  // Expanded search after 2 minutes
+  orderQueue.process('expand-driver-search', async (job) => {
+    const { orderId, restaurantId } = job.data;
+    const driver = await driverMatchingService.findDriver(orderId, restaurantId, 10); // 10km radius
     if (!driver) {
-      // Wait another 3 min total, then give up
-      await new Promise((r) => setTimeout(r, DRIVER_SEARCH_MAX_MS - DRIVER_SEARCH_TIMEOUT_MS));
-      driver = await matching.expandSearch(orderId, restaurantId);
-    }
-
-    if (!driver) {
-      // Notify restaurant that no driver was found
-      const { data: restaurant } = await supabase
-        .from('restaurants')
-        .select('owner_id, name')
-        .eq('id', restaurantId)
-        .single();
-
-      if (restaurant) {
-        await notifications.sendPushNotification({
-          userId: restaurant.owner_id,
-          title: '⚠️ Aucun livreur trouvé',
-          body: 'Aucun livreur disponible dans votre zone. Veuillez nous contacter.',
-          data: { order_id: orderId },
-        });
-      }
+      // Schedule final expanded search after 3 more minutes
+      await orderQueue.add('final-driver-search', { orderId, restaurantId }, { delay: 180_000 });
     }
   });
 
-  console.log('[Worker] Driver search worker started');
+  // Final search after 3 more minutes
+  orderQueue.process('final-driver-search', async (job) => {
+    const { orderId, restaurantId } = job.data;
+    await driverMatchingService.findDriver(orderId, restaurantId, 20); // 20km radius
+    // If still no driver, order remains unassigned — restaurant or client can cancel
+  });
 }
-
-export { driverSearchQueue };

@@ -36,4 +36,8 @@ export class TimeoutService {
   }
 }
 
+export async function addDelayedJob(name: string, data: any, delayMs: number): Promise<void> {
+  await orderQueue.add(name, data, { delay: delayMs });
+}
+
 export { orderQueue };
