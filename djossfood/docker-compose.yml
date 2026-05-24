@@ -1,0 +1,46 @@
+version: "3.9"
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: always
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - REDIS_URL=redis://redis:6379
+      # Supabase — inject at runtime or use .env file
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      # Campay — inject at runtime
+      - CAMPAY_BASE_URL=${CAMPAY_BASE_URL}
+      - CAMPAY_USERNAME=${CAMPAY_USERNAME}
+      - CAMPAY_PASSWORD=${CAMPAY_PASSWORD}
+      - CAMPAY_WEBHOOK_SECRET=${CAMPAY_WEBHOOK_SECRET}
+      # Admin signup secret
+      - ADMIN_SIGNUP_SECRET=${ADMIN_SIGNUP_SECRET}
+    env_file:
+      - .env.production
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
