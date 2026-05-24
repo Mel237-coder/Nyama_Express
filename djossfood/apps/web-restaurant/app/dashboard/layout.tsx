@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { AuthGuard } from '@/components/auth/auth-guard';
 import { ConnectionBanner } from '@/components/connection-banner';
 import { RestaurantProvider } from '@/contexts/restaurant-context';
@@ -98,9 +99,10 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
             {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
               const isActive = pathname === href;
               return (
-                <button
+                <Link
                   key={href}
-                  onClick={() => router.push(href)}
+                  href={href}
+                  aria-current={isActive ? 'page' : undefined}
                   className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                     isActive
                       ? 'bg-sidebar-active text-white'
@@ -109,7 +111,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
                 >
                   <Icon className="h-5 w-5" />
                   {label}
-                </button>
+                </Link>
               );
             })}
           </nav>
