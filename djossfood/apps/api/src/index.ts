@@ -17,7 +17,8 @@ import { TimeoutService } from './services/timeoutService';
 import { DriverMatchingService } from './services/driverMatchingService';
 import { RoutingService } from './services/routingService';
 import { apiRouter } from './routes';
-import { getSupabaseClient } from './config/supabase';
+import { getSupabaseClient, getSupabaseAdmin } from './config/supabase';
+import { getRedis } from './config/redis';
 
 const app = express();
 const httpServer = createServer(app);
@@ -72,8 +73,27 @@ app.use(cors());
 app.use(express.json());
 
 // Health check
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', service: 'djossfood-api' });
+app.get('/health', async (_req, res) => {
+  const checks: Record<string, 'ok' | 'fail'> = {};
+
+  // Supabase
+  try {
+    const { error } = await getSupabaseAdmin().from('profiles').select('id').limit(1);
+    checks.supabase = error ? 'fail' : 'ok';
+  } catch {
+    checks.supabase = 'fail';
+  }
+
+  // Redis
+  try {
+    await getRedis().ping();
+    checks.redis = 'ok';
+  } catch {
+    checks.redis = 'fail';
+  }
+
+  const overall = Object.values(checks).every((v) => v === 'ok') ? 'ok' : 'degraded';
+  res.status(overall === 'ok' ? 200 : 503).json({ status: overall, service: 'djossfood-api', checks });
 });
 
 // Routes
