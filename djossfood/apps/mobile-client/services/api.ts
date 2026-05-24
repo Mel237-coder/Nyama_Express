@@ -1,3 +1,4 @@
+import { Alert } from 'react-native';
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '../stores/authStore';
 
@@ -23,8 +24,8 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      const { signOut } = useAuthStore.getState();
-      await signOut();
+      Alert.alert('Session expiree', 'Veuillez vous reconnecter.');
+      useAuthStore.getState().signOut();
     }
     return Promise.reject(error);
   },

@@ -1,7 +1,16 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSecureItem, setSecureItem, deleteSecureItem } from '../services/secureStorage';
 import type { Profile, Driver } from '@djossfood/database';
+
+const secureStorage = {
+  getItem: async (name: string) => {
+    const value = await getSecureItem(name);
+    return value ?? null;
+  },
+  setItem: setSecureItem,
+  removeItem: deleteSecureItem,
+};
 
 interface AuthState {
   session: { access_token: string; refresh_token: string } | null;
@@ -55,7 +64,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'djossfood-driver-auth',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => secureStorage),
       partialize: (state) => ({
         session: state.session,
         profile: state.profile,
