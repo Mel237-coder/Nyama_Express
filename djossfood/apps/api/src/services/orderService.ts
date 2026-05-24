@@ -163,7 +163,7 @@ export class OrderService {
       amount: amountPaidUpfront,
       description: `Commande DjossFood - acompte 60%`,
       externalReference: `order-upfront-${Date.now()}`,
-      provider: data.payment_method === 'mtn_mobile_money' ? 'mtn_momo' : 'orange_money',
+      provider: data.payment_method === 'mobile_money' ? 'orange_money' : undefined,
     });
 
     if (!paymentResult.success) {
@@ -184,7 +184,7 @@ export class OrderService {
         total_amount: totalAmount,
         amount_paid_upfront: amountPaidUpfront,
         amount_paid_delivery: 0,
-        payment_method: data.payment_method === 'mtn_mobile_money' ? 'mobile_money' : 'mobile_money',
+        payment_method: data.payment_method,
         payment_status: 'partial',
         payment_phone: data.payment_phone,
         payment_ref_upfront: paymentResult.reference || null,
@@ -718,7 +718,7 @@ export class OrderService {
       amount: remainingAmount,
       description: `Commande DjossFood - solde 40%`,
       externalReference: `order-delivery-${orderId}`,
-      provider: (order as any).payment_method === 'mtn_mobile_money' ? 'mtn_momo' : 'orange_money',
+      provider: order.payment_method === 'mobile_money' ? 'orange_money' : undefined,
     });
 
     if (paymentResult.success) {

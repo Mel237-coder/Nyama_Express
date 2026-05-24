@@ -21,13 +21,20 @@ export type OrderStatus =
   | 'cancelled'
   | 'rejected';
 
-export type PaymentStatus = 'pending' | 'partial' | 'completed' | 'refunded' | 'failed';
+export type PaymentStatus =
+  | 'pending'
+  | 'processing'
+  | 'paid'
+  | 'failed'
+  | 'refunded'
+  | 'partial'
+  | 'completed';
 
-export type PaymentMethod = 'orange_money' | 'mtn_mobile_money';
+export type PaymentMethod = 'cash' | 'mobile_money' | 'card';
 
-export type DriverStatus = 'offline' | 'available' | 'busy';
+export type DriverStatus = 'offline' | 'available' | 'busy' | 'on_delivery';
 
-export type RestaurantStatus = 'open' | 'closed' | 'busy';
+export type RestaurantStatus = 'closed' | 'open' | 'busy' | 'temporarily_closed';
 
 // ---------------------------------------------------------------------------
 // GeoJSON helpers
@@ -44,13 +51,10 @@ export interface GeoJSONPoint {
 
 export interface Profile {
   id: string;
-  phone: string;
   full_name: string | null;
-  avatar_url: string | null;
+  phone: string | null;
   role: UserRole;
-  city: string | null;
-  is_verified: boolean;
-  is_active: boolean;
+  avatar_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -60,24 +64,23 @@ export interface Restaurant {
   owner_id: string;
   name: string;
   description: string | null;
-  logo_url: string | null;
-  cover_url: string | null;
-  phone: string | null;
-  address: string | null;
-  city: string | null;
+  city: string;
+  address: string;
   location: GeoJSONPoint | null;
+  phone: string | null;
+  email: string | null;
   cuisine_types: string[];
   opening_hours: Record<string, unknown>;
+  image_url: string | null;
+  is_active: boolean;
+  is_approved: boolean;
   status: RestaurantStatus;
   base_rating: number;
   admin_boost: number;
   total_rating: number;
   rating_count: number;
-  avg_preparation_time: number | null;
   min_order_amount: number;
-  delivery_fee: number;
-  is_featured: boolean;
-  is_active: boolean;
+  wallet_balance: number;
   created_at: string;
   updated_at: string;
 }
@@ -86,46 +89,42 @@ export interface MenuCategory {
   id: string;
   restaurant_id: string;
   name: string;
-  description: string | null;
-  sort_order: number;
-  is_active: boolean;
+  display_order: number;
+  created_at: string;
 }
 
 export interface MenuItem {
   id: string;
+  category_id: string;
   restaurant_id: string;
-  category_id: string | null;
   name: string;
   description: string | null;
-  image_url: string | null;
   price: number;
-  tags: string[];
+  image_url: string | null;
   is_available: boolean;
-  is_active: boolean;
+  preparation_time_minutes: number | null;
   created_at: string;
   updated_at: string;
 }
 
 export interface Order {
   id: string;
-  order_number: string;
+  order_number: number;
   client_id: string;
   restaurant_id: string;
   driver_id: string | null;
   status: OrderStatus;
-  delivery_address: string;
-  delivery_location: GeoJSONPoint | null;
-  delivery_notes: string | null;
   subtotal: number;
   delivery_fee: number;
   total_amount: number;
-  amount_paid_upfront: number;
-  amount_paid_delivery: number;
-  payment_method: PaymentMethod;
+  payment_method: PaymentMethod | null;
   payment_status: PaymentStatus;
-  payment_phone: string | null;
-  payment_ref_upfront: string | null;
-  payment_ref_delivery: string | null;
+  delivery_location: GeoJSONPoint | null;
+  delivery_address: string | null;
+  route_distance_km: number | null;
+  route_duration_minutes: number | null;
+  notes: string | null;
+  cancellation_reason: string | null;
   confirmed_at: string | null;
   preparing_started_at: string | null;
   ready_at: string | null;
@@ -134,13 +133,7 @@ export interface Order {
   delivered_at: string | null;
   completed_at: string | null;
   cancelled_at: string | null;
-  expires_at: string | null;
-  route_distance_km: number | null;
-  route_duration_min: number | null;
-  route_polyline: string | null;
-  estimated_delivery_time: string | null;
-  client_confirmed_delivery: boolean;
-  cancellation_reason: string | null;
+  expires_at: string;
   created_at: string;
   updated_at: string;
 }
@@ -149,76 +142,71 @@ export interface OrderItem {
   id: string;
   order_id: string;
   menu_item_id: string;
-  name: string;
-  price: number;
   quantity: number;
-  special_instructions: string | null;
+  unit_price: number;
   subtotal: number;
+  special_instructions: string | null;
+  created_at: string;
 }
 
 export interface Driver {
   id: string;
   vehicle_type: string | null;
   vehicle_plate: string | null;
-  license_number: string | null;
   current_location: GeoJSONPoint | null;
-  current_location_updated_at: string | null;
   status: DriverStatus;
   rating: number;
   rating_count: number;
-  total_deliveries: number;
-  payout_method: PaymentMethod | null;
-  payout_phone: string | null;
   wallet_balance: number;
   is_approved: boolean;
   documents: Record<string, unknown>;
   created_at: string;
+  updated_at: string;
 }
 
 export interface Rating {
   id: string;
   order_id: string;
-  client_id: string;
+  reviewer_id: string;
   restaurant_id: string;
   driver_id: string | null;
   restaurant_rating: number;
   driver_rating: number | null;
-  restaurant_comment: string | null;
-  driver_comment: string | null;
+  comment: string | null;
   created_at: string;
 }
 
 export interface Notification {
   id: string;
   recipient_id: string;
-  type: string;
   title: string;
-  body: string;
-  data: Record<string, unknown>;
+  message: string;
+  type: string;
   is_read: boolean;
-  sent_at: string;
+  data: Record<string, unknown>;
+  created_at: string;
 }
 
 export interface PaymentTransaction {
   id: string;
   order_id: string;
-  method: PaymentMethod;
-  phone: string;
   amount: number;
-  reference: string;
-  status: PaymentStatus;
-  type: 'upfront' | 'delivery';
-  api_response: Record<string, unknown> | null;
-  initiated_at: string;
-  completed_at: string | null;
+  payment_method: PaymentMethod;
+  payment_status: PaymentStatus;
+  transaction_reference: string | null;
+  phone: string | null;
+  provider_response: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface AdminAction {
   id: string;
   admin_id: string;
-  action_type: string;
   target_type: string;
   target_id: string;
+  action: string;
+  action_type: string | null;
   previous_value: Record<string, unknown> | null;
   new_value: Record<string, unknown> | null;
   reason: string | null;
@@ -257,20 +245,14 @@ export interface OrderCreationData {
 export interface SearchResult {
   id: string;
   name: string;
-  logo_url: string | null;
-  cover_url: string | null;
+  description: string | null;
+  city: string;
+  address: string;
+  phone: string | null;
   cuisine_types: string[];
   total_rating: number;
   rating_count: number;
-  avg_preparation_time: number | null;
-  delivery_fee: number;
   min_order_amount: number;
-  status: RestaurantStatus;
   distance_km: number | null;
-  matching_items: Array<{
-    id: string;
-    name: string;
-    price: number;
-    image_url: string | null;
-  }>;
+  matching_items: string | null;
 }
