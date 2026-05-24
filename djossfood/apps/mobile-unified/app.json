@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "DjossFood",
+    "slug": "djossfood",
+    "version": "0.0.1",
+    "orientation": "default",
+    "scheme": "djossfood",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "backgroundColor": "#00AA13"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.djossfood.client"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#00AA13"
+      },
+      "package": "com.djossfood.client"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": ["expo-router"],
+    "extra": {
+      "router": {
+        "origin": false
+      }
+    }
+  }
+}

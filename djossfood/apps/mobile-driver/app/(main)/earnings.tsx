@@ -24,13 +24,6 @@ function formatAmount(value: number): string {
   return value.toLocaleString('fr-FR');
 }
 
-interface DeliveryItem {
-  id: string;
-  restaurantName: string;
-  date: string;
-  earnings: number;
-}
-
 export default function EarningsScreen() {
   const { data, isLoading, refetch, isRefetching } = useDriverEarnings();
 
@@ -38,21 +31,19 @@ export default function EarningsScreen() {
     return <LoadingSpinner message="Chargement des gains..." />;
   }
 
-  const walletBalance = data?.total ?? 0;
-  const todayEarnings = data?.today ?? 0;
-  const todayDeliveries = 0; // Not available from current API; placeholder
+  const walletBalance = data?.wallet_balance ?? 0;
+  const todayEarnings = data?.today_earnings ?? 0;
+  const todayDeliveries = data?.today_deliveries ?? 0;
+  const deliveries = data?.deliveries ?? [];
 
-  // Build delivery history from available data (API currently returns summary)
-  const deliveries: DeliveryItem[] = [];
-
-  const renderItem = ({ item }: { item: DeliveryItem }) => (
+  const renderItem = ({ item }: { item: typeof deliveries[0] }) => (
     <Card style={styles.deliveryCard}>
       <View style={styles.deliveryRow}>
         <View style={styles.deliveryInfo}>
-          <Text style={styles.restaurantName}>{item.restaurantName}</Text>
+          <Text style={styles.restaurantName}>{item.restaurant_name}</Text>
           <Text style={styles.deliveryDate}>{formatDate(item.date)}</Text>
         </View>
-        <Text style={styles.earningsAmount}>+{formatAmount(item.earnings)} FCFA</Text>
+        <Text style={styles.earningsAmount}>+{formatAmount(item.amount)} FCFA</Text>
       </View>
     </Card>
   );

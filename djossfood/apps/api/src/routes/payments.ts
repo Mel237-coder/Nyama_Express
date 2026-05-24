@@ -8,7 +8,7 @@ const router = Router();
 router.post('/webhook', async (req: Request, res: Response) => {
   try {
     const paymentService = new PaymentService();
-    const result = await paymentService.handlePaymentWebhook(req.body);
+    const result = await paymentService.handlePaymentWebhook(req.body, req.headers['x-campay-signature'] as string | undefined);
 
     if (result.success) {
       return res.json({ status: 'ok', message: result.message });

@@ -47,6 +47,19 @@ router.put('/restaurants/:id/boost', async (req: AuthRequest, res: Response) => 
   try {
     const supabase = getSupabaseAdmin();
 
+    // Fetch current boost value first
+    const { data: current, error: fetchError } = await supabase
+      .from('restaurants')
+      .select('admin_boost')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !current) {
+      return res.status(404).json({ error: 'Restaurant non trouve' });
+    }
+
+    const previousBoost = current.admin_boost;
+
     // Update the restaurant's admin_boost
     const { data: restaurant, error: updateError } = await supabase
       .from('restaurants')
@@ -59,13 +72,13 @@ router.put('/restaurants/:id/boost', async (req: AuthRequest, res: Response) => 
       return res.status(404).json({ error: 'Restaurant non trouve' });
     }
 
-    // Log the admin action
+    // Log the admin action with correct previous_value
     await supabase.from('admin_actions').insert({
       admin_id: req.userId!,
       action_type: 'boost_restaurant',
       target_type: 'restaurant',
       target_id: id,
-      previous_value: { admin_boost: (restaurant as any).admin_boost },
+      previous_value: { admin_boost: previousBoost },
       new_value: { admin_boost: boost },
       reason,
     });
@@ -227,6 +240,29 @@ router.get('/kpis', async (_req: AuthRequest, res: Response) => {
       statusCounts[s] = (statusCounts[s] || 0) + 1;
     }
 
+    // Daily revenue for last 14 days
+    const { data: dailyOrders } = await supabase
+      .from('orders')
+      .select('total_amount, completed_at')
+      .eq('status', 'completed')
+      .not('completed_at', 'is', null)
+      .order('completed_at', { ascending: true });
+
+    const dailyMap: Record<string, number> = {};
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().split('T')[0];
+      dailyMap[key] = 0;
+    }
+    for (const order of dailyOrders || []) {
+      const day = (order as any).completed_at?.split('T')[0];
+      if (day && day in dailyMap) {
+        dailyMap[day] += (order as any).total_amount || 0;
+      }
+    }
+    const dailyRevenue = Object.entries(dailyMap).map(([date, revenue]) => ({ date, revenue }));
+
     return res.json({
       totalOrders: totalOrders || 0,
       totalRevenue,
@@ -235,9 +271,106 @@ router.get('/kpis', async (_req: AuthRequest, res: Response) => {
       totalDrivers: totalDrivers || 0,
       activeOrders: activeOrders || 0,
       ordersByStatus: statusCounts,
+      dailyRevenue,
     });
   } catch (err: any) {
     console.error('Admin KPIs error:', err.message);
+    return res.status(500).json({ error: 'Erreur interne du serveur' });
+  }
+});
+
+// PUT /api/admin/restaurants/:id/approve - Toggle restaurant approval
+router.put('/restaurants/:id/approve', async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  const { is_approved } = req.body as { is_approved: boolean };
+
+  if (typeof is_approved !== 'boolean') {
+    return res.status(400).json({ error: 'is_approved doit etre un booleen' });
+  }
+
+  try {
+    const supabase = getSupabaseAdmin();
+
+    const { data: restaurant, error: updateError } = await supabase
+      .from('restaurants')
+      .update({ is_approved })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (updateError || !restaurant) {
+      return res.status(404).json({ error: 'Restaurant non trouve' });
+    }
+
+    await supabase.from('admin_actions').insert({
+      admin_id: req.userId!,
+      action_type: is_approved ? 'approve_restaurant' : 'disapprove_restaurant',
+      target_type: 'restaurant',
+      target_id: id,
+      previous_value: { is_approved: !is_approved },
+      new_value: { is_approved },
+      reason: is_approved ? 'Admin approval' : 'Admin disapproval',
+    });
+
+    return res.json({ restaurant });
+  } catch (err: any) {
+    console.error('Admin approve restaurant error:', err.message);
+    return res.status(500).json({ error: 'Erreur interne du serveur' });
+  }
+});
+
+// GET /api/admin/drivers/:id - Get single driver with profile details
+router.get('/drivers/:id', async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+
+  try {
+    const supabase = getSupabaseAdmin();
+
+    const { data: driver, error } = await supabase
+      .from('drivers')
+      .select('*, profiles!drivers_id_fkey(full_name, phone, avatar_url)')
+      .eq('id', id)
+      .single();
+
+    if (error || !driver) {
+      return res.status(404).json({ error: 'Livreur non trouve' });
+    }
+
+    return res.json({ driver });
+  } catch (err: any) {
+    console.error('Admin get driver error:', err.message);
+    return res.status(500).json({ error: 'Erreur interne du serveur' });
+  }
+});
+
+// GET /api/admin/notifications - List all notifications (paginated)
+router.get('/notifications', async (req: AuthRequest, res: Response) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = Math.min(parseInt(req.query.limit as string) || 30, 100);
+  const offset = (page - 1) * limit;
+
+  try {
+    const supabase = getSupabaseAdmin();
+
+    const { data: notifications, error, count } = await supabase
+      .from('notifications')
+      .select('*', { count: 'exact' })
+      .order('sent_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) {
+      console.error('Admin list notifications error:', error.message);
+      return res.status(500).json({ error: 'Erreur lors du chargement des notifications' });
+    }
+
+    return res.json({
+      notifications: notifications || [],
+      total: count || 0,
+      page,
+      limit,
+    });
+  } catch (err: any) {
+    console.error('Admin list notifications error:', err.message);
     return res.status(500).json({ error: 'Erreur interne du serveur' });
   }
 });

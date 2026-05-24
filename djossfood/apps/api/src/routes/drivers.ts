@@ -97,4 +97,69 @@ router.put('/me/location', async (req: AuthRequest, res: Response) => {
   }
 });
 
+// GET /api/drivers/me/earnings - Get driver earnings summary
+router.get('/me/earnings', async (req: AuthRequest, res: Response) => {
+  try {
+    const supabase = getSupabaseAdmin();
+
+    // Get driver profile with wallet balance
+    const { data: driver, error: driverError } = await supabase
+      .from('drivers')
+      .select('id, wallet_balance, total_deliveries')
+      .eq('id', req.userId!)
+      .single();
+
+    if (driverError || !driver) {
+      return res.status(404).json({ error: 'Profil livreur non trouve' });
+    }
+
+    // Get today's completed deliveries
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayIso = today.toISOString();
+
+    const { data: todayOrders } = await supabase
+      .from('orders')
+      .select('id, delivery_fee, total_amount, created_at')
+      .eq('driver_id', req.userId!)
+      .eq('status', 'completed')
+      .gte('completed_at', todayIso);
+
+    const todayEarnings = (todayOrders || []).reduce((sum: number, order: any) => {
+      // Driver earns delivery_fee minus platform commission
+      return sum + Math.round((order.delivery_fee || 0) * 0.85);
+    }, 0);
+
+    const todayDeliveries = (todayOrders || []).length;
+
+    // Get recent delivery history (last 30)
+    const { data: recentOrders } = await supabase
+      .from('orders')
+      .select('id, order_number, delivery_fee, completed_at, restaurants(name)')
+      .eq('driver_id', req.userId!)
+      .in('status', ['completed', 'delivered'])
+      .order('completed_at', { ascending: false })
+      .limit(30);
+
+    const deliveries = (recentOrders || []).map((order: any) => ({
+      id: order.id,
+      order_number: order.order_number,
+      restaurant_name: order.restaurants?.name || 'Restaurant',
+      amount: Math.round((order.delivery_fee || 0) * 0.85),
+      date: order.completed_at,
+    }));
+
+    return res.json({
+      wallet_balance: driver.wallet_balance,
+      today_earnings: todayEarnings,
+      today_deliveries: todayDeliveries,
+      total_deliveries: driver.total_deliveries,
+      deliveries,
+    });
+  } catch (err: any) {
+    console.error('Get driver earnings error:', err.message);
+    return res.status(500).json({ error: 'Erreur interne du serveur' });
+  }
+});
+
 export const driversRouter = router;

@@ -1,0 +1,26 @@
+{
+  "extends": "@djossfood/config/tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "lib": ["ES2022", "dom", "dom.iterable"],
+    "moduleResolution": "bundler",
+    "jsx": "preserve",
+    "outDir": "./dist",
+    "rootDir": ".",
+    "allowJs": true,
+    "noEmit": true,
+    "incremental": true,
+    "isolatedModules": true,
+    "paths": {
+      "@/*": ["./*"]
+    },
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

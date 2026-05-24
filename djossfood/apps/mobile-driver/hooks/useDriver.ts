@@ -10,11 +10,20 @@ interface DriverProfileResponse {
   driver: Driver;
 }
 
+interface DeliveryHistoryItem {
+  id: string;
+  order_number: string;
+  restaurant_name: string;
+  amount: number;
+  date: string;
+}
+
 interface EarningsResponse {
-  total: number;
-  today: number;
-  week: number;
-  month: number;
+  wallet_balance: number;
+  today_earnings: number;
+  today_deliveries: number;
+  total_deliveries: number;
+  deliveries: DeliveryHistoryItem[];
 }
 
 export function useDriverProfile() {
@@ -71,7 +80,7 @@ export function useDriverEarnings() {
   return useQuery<EarningsResponse>({
     queryKey: ['driverEarnings'],
     queryFn: async () => {
-      const response = await api.get<EarningsResponse>('/api/driver-owner/earnings');
+      const response = await api.get<EarningsResponse>('/api/drivers/me/earnings');
       return response.data;
     },
     staleTime: 60 * 1000,

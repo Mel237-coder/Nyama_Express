@@ -42,7 +42,8 @@ export default function HomeScreen() {
     }
   }, [isOnline]);
 
-  const todayEarnings = earnings?.today ?? 0;
+  const todayEarnings = earnings?.today_earnings ?? 0;
+  const todayDeliveries = earnings?.today_deliveries ?? 0;
 
   const handleToggleOnline = () => {
     toggleOnlineMutation.mutate(!isOnline);
@@ -103,7 +104,7 @@ export default function HomeScreen() {
             <View style={styles.offlineContent}>
               <Text style={styles.offlineTitle}>Hors ligne</Text>
               <Text style={styles.offlineSubtitle}>
-                Aujourd'hui: {todayEarnings.toLocaleString()} FCFA | 0 courses
+                Aujourd'hui: {todayEarnings.toLocaleString()} FCFA | {todayDeliveries} courses
               </Text>
               <Button
                 title="Aller en ligne"
