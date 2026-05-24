@@ -4,6 +4,7 @@ import { useAuthStore } from '../stores/authStore';
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001';
 
 let socket: Socket | null = null;
+const listeners = new Map<string, Set<Function>>();
 
 export function getSocket(): Socket {
   if (!socket) {
@@ -58,12 +59,24 @@ export function leaveRoom(room: string): void {
   s.emit('leave_room', room);
 }
 
-export function onEvent(event: string, callback: (...args: any[]) => void): void {
-  const s = getSocket();
-  s.on(event, callback);
+export function onEvent(event: string, handler: Function): void {
+  if (!socket) return;
+  socket.on(event, handler as any);
+  if (!listeners.has(event)) listeners.set(event, new Set());
+  listeners.get(event)!.add(handler);
 }
 
-export function offEvent(event: string, callback?: (...args: any[]) => void): void {
-  const s = getSocket();
-  s.off(event, callback);
+export function offEvent(event: string, handler: Function): void {
+  if (!socket) return;
+  socket.off(event, handler as any);
+  listeners.get(event)?.delete(handler);
+}
+
+export function offAllEvent(event: string): void {
+  if (!socket) return;
+  const eventListeners = listeners.get(event);
+  if (eventListeners) {
+    eventListeners.forEach((handler) => socket!.off(event, handler as any));
+    eventListeners.clear();
+  }
 }

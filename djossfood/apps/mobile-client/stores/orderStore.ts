@@ -25,52 +25,63 @@ interface OrderState {
   updateOrderStatus: (orderId: string, updates: Partial<Order>) => void;
 }
 
-export const useOrderStore = create<OrderState>()((set, get) => ({
-  activeOrders: [],
-  orderHistory: [],
-  currentOrder: null,
+export const useOrderStore = create<OrderState>()((set, get) => {
+  let statusHandler: ((data: Partial<Order>) => void) | null = null;
+  let locationHandler: ((data: DriverLocation) => void) | null = null;
 
-  setActiveOrders: (orders) => set({ activeOrders: orders }),
+  return {
+    activeOrders: [],
+    orderHistory: [],
+    currentOrder: null,
 
-  setOrderHistory: (orders) => set({ orderHistory: orders }),
+    setActiveOrders: (orders) => set({ activeOrders: orders }),
 
-  setCurrentOrder: (order) => set({ currentOrder: order }),
+    setOrderHistory: (orders) => set({ orderHistory: orders }),
 
-  subscribeToOrder: (orderId) => {
-    joinRoom(`order:${orderId}`);
+    setCurrentOrder: (order) => set({ currentOrder: order }),
 
-    const statusHandler = (data: Partial<Order>) => {
-      get().updateOrderStatus(orderId, data);
-    };
+    subscribeToOrder: (orderId) => {
+      joinRoom(`order:${orderId}`);
 
-    const locationHandler = (data: DriverLocation) => {
-      const current = get().currentOrder;
-      if (current && current.id === orderId) {
-        set({
-          currentOrder: { ...current, _driverLocation: data },
-        });
+      statusHandler = (data: Partial<Order>) => {
+        get().updateOrderStatus(orderId, data);
+      };
+
+      locationHandler = (data: DriverLocation) => {
+        const current = get().currentOrder;
+        if (current && current.id === orderId) {
+          set({
+            currentOrder: { ...current, _driverLocation: data },
+          });
+        }
+      };
+
+      onEvent('order_status_update', statusHandler);
+      onEvent('driver_location', locationHandler);
+    },
+
+    unsubscribeFromOrder: (orderId) => {
+      leaveRoom(`order:${orderId}`);
+      if (statusHandler) {
+        offEvent('order_status_update', statusHandler);
+        statusHandler = null;
       }
-    };
+      if (locationHandler) {
+        offEvent('driver_location', locationHandler);
+        locationHandler = null;
+      }
+    },
 
-    onEvent('order_status_update', statusHandler);
-    onEvent('driver_location', locationHandler);
-  },
-
-  unsubscribeFromOrder: (orderId) => {
-    leaveRoom(`order:${orderId}`);
-    offEvent('order_status_update');
-    offEvent('driver_location');
-  },
-
-  updateOrderStatus: (orderId, updates) => {
-    set((state) => ({
-      activeOrders: state.activeOrders.map((o) =>
-        o.id === orderId ? { ...o, ...updates } : o,
-      ),
-      currentOrder:
-        state.currentOrder?.id === orderId
-          ? { ...state.currentOrder, ...updates }
-          : state.currentOrder,
-    }));
-  },
-}));
+    updateOrderStatus: (orderId, updates) => {
+      set((state) => ({
+        activeOrders: state.activeOrders.map((o) =>
+          o.id === orderId ? { ...o, ...updates } : o,
+        ),
+        currentOrder:
+          state.currentOrder?.id === orderId
+            ? { ...state.currentOrder, ...updates }
+            : state.currentOrder,
+      }));
+    },
+  };
+});
